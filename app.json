@@ -8,7 +8,8 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.there-you-go"
+      "bundleIdentifier": "com.anonymous.there-you-go",
+      "appleTeamId": "4RN9YDZ3N3"
     },
     "android": {
       "adaptiveIcon": {
@@ -24,13 +25,20 @@
     },
     "plugins": [
       [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow ThereYouGo to use your location to notify you when you arrive at a relevant place."
+        }
+      ],
+      [
         "expo-build-properties",
         {
           "ios": {
             "usePrecompiledModules": false
           }
         }
-      ]
+      ],
+      "./plugins/with-local-notifications-only"
     ]
   }
 }
