@@ -49,7 +49,34 @@ The trigger is system-managed after scheduling. It does not require Metro, a run
 - The trigger remains reliable across repeated tests, reduced-accuracy permission, disabled location services, device reboot, or user force-quit behavior.
 - Background location tracking, motion activity, `CLVisit`, multiple dynamic places, or production-scale scheduling is feasible.
 
-Real-world results will be recorded before starting the broader geofencing and evidence-collection work below.
+### Test #1 result — 2026-09-10
+
+The UPS notification fired when the tester reached the destination area. However, ThereYouGo was opened near the destination to look up the address before the notification was noticed. This confirms the trigger worked, but it does not cleanly establish that the notification appeared while the app remained backgrounded for the entire approach.
+
+## Experiment 2 — backgrounded approach
+
+### Hypothesis
+
+The same system-managed, one-shot entry notification will fire while ThereYouGo remains backgrounded throughout the complete trip and approach.
+
+The Test #2 destination is 4640 Admiralty Way, Marina del Rey, CA 90292. Its coordinate is `33.9811362, -118.4409594`, verified on 2026-09-10 against the OpenStreetMap address feature and the US Census geocoder, which placed the same address approximately three meters away. The radius remains exactly 150 meters so destination and app lifecycle behavior are the only intended test changes.
+
+The request uses the unique identifier `admiralty-way-4640-arrival-test-2` with entry enabled, exit disabled, and repeats disabled. Before scheduling it, the app removes and verifies the absence of the previous `ups-mar-vista-arrival` request.
+
+Expected notification:
+
+> There you go 👀<br>
+> You've arrived at 4640 Admiralty Way.
+
+After iOS reports the new request as pending, the tester will background ThereYouGo, disconnect the iPhone from the Mac, use the phone normally without reopening ThereYouGo, and travel into or through the 150-meter region.
+
+Success means the notification appears without any interaction with ThereYouGo during the approach. This repeats only the system-managed notification test; it does not add programmable geofence callbacks, TaskManager, location polling, continuous tracking, or visit detection.
+
+### Test #2 result — 2026-09-28
+
+Test #2 passed on a physical iPhone. The location notification was scheduled before the trip, ThereYouGo remained backgrounded throughout the approach, and the notification fired when the tester arrived at the target location.
+
+Unlike Test #1, the app was not reopened near the destination before the notification was observed. Test #2 therefore cleanly confirms that iOS can retain and deliver the system-managed, one-shot entry notification during a complete backgrounded approach without interaction with ThereYouGo. It does not expand the spike's scope: programmable geofence callbacks, precise visit classification, continuous tracking, and production-scale scheduling remain unproven.
 
 ## Broader visit-detection hypothesis
 

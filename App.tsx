@@ -14,13 +14,18 @@ import LocationNotificationModule, {
   type ScheduledLocationNotification,
 } from './modules/there-you-go-location-notification/src/ThereYouGoLocationNotificationModule';
 
-const TEST_NOTIFICATION_ID = 'ups-mar-vista-arrival';
+const PREVIOUS_TEST_NOTIFICATION_ID = 'ups-mar-vista-arrival';
+const TEST_NOTIFICATION_ID = 'admiralty-way-4640-arrival-test-2';
 const TEST_LOCATION = {
-  name: 'The UPS Store — Mar Vista',
-  address: '12405 Venice Blvd, Mar Vista, CA 90066',
-  latitude: 34.0038427,
-  longitude: -118.434097,
+  name: 'Test #2 — Admiralty Way',
+  address: '4640 Admiralty Way, Marina del Rey, CA 90292',
+  latitude: 33.9811362,
+  longitude: -118.4409594,
   radius: 150,
+} as const;
+const TEST_NOTIFICATION = {
+  title: 'There you go 👀',
+  body: "You've arrived at 4640 Admiralty Way.",
 } as const;
 
 Notifications.setNotificationHandler({
@@ -76,20 +81,30 @@ export default function App() {
     useState<Location.LocationPermissionResponse | null>(null);
   const [scheduled, setScheduled] =
     useState<ScheduledLocationNotification | null>(null);
+  const [previousReminderPending, setPreviousReminderPending] = useState(false);
   const [isWorking, setIsWorking] = useState(false);
   const [result, setResult] = useState('Ready to configure the test.');
 
   const refreshStatus = useCallback(async () => {
-    const [notificationStatus, locationStatus, scheduledNotification] =
+    const [
+      notificationStatus,
+      locationStatus,
+      scheduledNotification,
+      previousScheduledNotification,
+    ] =
       await Promise.all([
         Notifications.getPermissionsAsync(),
         Location.getForegroundPermissionsAsync(),
         LocationNotificationModule.getScheduledAsync(TEST_NOTIFICATION_ID),
+        LocationNotificationModule.getScheduledAsync(
+          PREVIOUS_TEST_NOTIFICATION_ID,
+        ),
       ]);
 
     setNotificationPermissions(notificationStatus);
     setLocationPermissions(locationStatus);
     setScheduled(scheduledNotification);
+    setPreviousReminderPending(previousScheduledNotification !== null);
   }, []);
 
   useEffect(() => {
@@ -176,11 +191,21 @@ export default function App() {
         throw new Error('Enable Precise Location in iOS Settings first.');
       }
 
+      const previousReminderCancelled =
+        await LocationNotificationModule.cancelAsync(
+          PREVIOUS_TEST_NOTIFICATION_ID,
+        );
+      if (!previousReminderCancelled) {
+        throw new Error('The previous UPS reminder could not be removed.');
+      }
+      setPreviousReminderPending(false);
+
       await LocationNotificationModule.cancelAsync(TEST_NOTIFICATION_ID);
+      setScheduled(null);
       const identifier = await LocationNotificationModule.scheduleAsync({
         identifier: TEST_NOTIFICATION_ID,
-        title: 'There you go 👀',
-        body: "Don't forget to drop off your package.",
+        title: TEST_NOTIFICATION.title,
+        body: TEST_NOTIFICATION.body,
         latitude: TEST_LOCATION.latitude,
         longitude: TEST_LOCATION.longitude,
         radius: TEST_LOCATION.radius,
@@ -189,13 +214,26 @@ export default function App() {
         await LocationNotificationModule.getScheduledAsync(identifier);
 
       setScheduled(accepted);
+      const matchesTest =
+        accepted?.identifier === TEST_NOTIFICATION_ID &&
+        accepted.title === TEST_NOTIFICATION.title &&
+        accepted.body === TEST_NOTIFICATION.body &&
+        accepted.latitude === TEST_LOCATION.latitude &&
+        accepted.longitude === TEST_LOCATION.longitude &&
+        accepted.radius === TEST_LOCATION.radius &&
+        accepted.notifyOnEntry &&
+        !accepted.notifyOnExit &&
+        !accepted.repeats;
+
+      if (!matchesTest) {
+        throw new Error(
+          'The pending iOS notification does not match the Test #2 configuration.',
+        );
+      }
       setResult(
-        accepted
-          ? `iOS accepted reminder “${identifier}”.`
-          : 'The scheduling call returned, but the reminder was not found.',
+        `iOS accepted and verified Test #2 reminder “${identifier}”.`,
       );
     } catch (error) {
-      setScheduled(null);
       setResult(
         `Scheduling failed: ${
           error instanceof Error ? error.message : String(error)
@@ -214,7 +252,7 @@ export default function App() {
       setScheduled(null);
       setResult(
         cancelled
-          ? 'The UPS arrival reminder is no longer scheduled.'
+          ? 'The Admiralty Way arrival reminder is no longer scheduled.'
           : 'iOS still reports the reminder as scheduled.',
       );
     } catch (error) {
@@ -257,12 +295,30 @@ export default function App() {
           </Text>
           <Text style={styles.statusLabel}>Scheduled with iOS</Text>
           <Text style={styles.statusValue}>{scheduled ? 'Yes' : 'No'}</Text>
+          <Text style={styles.statusLabel}>Previous UPS reminder pending</Text>
+          <Text style={styles.statusValue}>
+            {previousReminderPending ? 'Yes' : 'No'}
+          </Text>
           {scheduled ? (
-            <Text style={styles.scheduledDetail}>
-              Entry: {scheduled.notifyOnEntry ? 'on' : 'off'} · Exit:{' '}
-              {scheduled.notifyOnExit ? 'on' : 'off'} · Repeats:{' '}
-              {scheduled.repeats ? 'yes' : 'no'}
-            </Text>
+            <View>
+              <Text style={styles.scheduledDetail}>
+                ID: {scheduled.identifier}
+              </Text>
+              <Text style={styles.scheduledDetail}>
+                Center: {scheduled.latitude}, {scheduled.longitude}
+              </Text>
+              <Text style={styles.scheduledDetail}>
+                Radius: {scheduled.radius} m
+              </Text>
+              <Text style={styles.scheduledDetail}>
+                Entry: {scheduled.notifyOnEntry ? 'on' : 'off'} · Exit:{' '}
+                {scheduled.notifyOnExit ? 'on' : 'off'} · Repeats:{' '}
+                {scheduled.repeats ? 'yes' : 'no'}
+              </Text>
+              <Text style={styles.scheduledDetail}>
+                {scheduled.title} — {scheduled.body}
+              </Text>
+            </View>
           ) : null}
         </View>
 
@@ -298,7 +354,7 @@ export default function App() {
           ]}
         >
           <Text style={[styles.buttonText, styles.primaryButtonText]}>
-            3. Schedule UPS arrival reminder
+            3. Schedule Test #2 arrival reminder
           </Text>
         </Pressable>
 
