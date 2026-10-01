@@ -78,6 +78,75 @@ Test #2 passed on a physical iPhone. The location notification was scheduled bef
 
 Unlike Test #1, the app was not reopened near the destination before the notification was observed. Test #2 therefore cleanly confirms that iOS can retain and deliver the system-managed, one-shot entry notification during a complete backgrounded approach without interaction with ThereYouGo. It does not expand the spike's scope: programmable geofence callbacks, precise visit classification, continuous tracking, and production-scale scheduling remain unproven.
 
+## Technical Spike #2 — native destination rotation
+
+### Question
+
+Can native iOS code notice meaningful movement while ThereYouGo is backgrounded, replace the geographic destinations represented by system-owned notifications, and have those newly installed destinations fire without waking React Native or continuously tracking GPS?
+
+### Implementation tested
+
+The physical-device harness used two test areas approximately 4.5 miles apart. Exact addresses and coordinates are intentionally omitted because they are not architectural inputs.
+
+At Area A, the app:
+
+1. Scheduled and verified a one-shot 150-meter entry notification.
+2. Persisted the native experiment phase.
+3. Started `CLLocationManager` significant-location-change monitoring with Always and Precise location authorization.
+
+After meaningful movement, native Swift:
+
+1. Received the significant-location-change callback.
+2. Started a finite background task.
+3. Scheduled two independent Area B `UNLocationNotificationTrigger` requests at the same center, with 150-meter and 500-meter radii.
+4. Used unique notification and region identifiers for each request.
+5. Read both requests back and verified identifier, center, radius, `notifyOnEntry = true`, `notifyOnExit = false`, and `repeats = false`.
+6. Removed Area A only after both Area B requests verified successfully.
+7. Stopped significant-location-change monitoring after rotation.
+
+Durable native logging recorded process launches, location callbacks, rotation progress, request configuration and verification, failures, and monitoring state. A debug-only time-triggered receipt confirmed completion during the physical test.
+
+### Successful physical test — 2026-10-01
+
+The experiment was armed at `2026-10-01T17:03:16Z`. Area A was verified pending and significant-change monitoring started.
+
+At `2026-10-01T17:06:14Z`, while ThereYouGo was backgrounded, iOS delivered a significant-location-change event approximately 508.7 meters from Area A with good reported accuracy. Native Swift completed the rotation without React Native or JavaScript running. Both Area B requests were present and matched their expected configuration before Area A was removed.
+
+ThereYouGo remained backgrounded during the trip to Area B. The 500-meter Area B notification fired first; the 150-meter notification fired afterward as the tester approached the destination. The app was not reopened between native rotation and either arrival notification.
+
+After arrival, native state reported phase `areaB`, no pending destination, monitoring not requested, Always location authorization, and full accuracy. No pending destination is consistent with both non-repeating requests having fired and been consumed.
+
+### Earlier failed test
+
+An earlier version used one 150-meter destination slot. Native code reused the Area A notification/region identifier when replacing it with Area B. The background significant-change wake and rotation succeeded, and Area B was read back as pending, but the Area B arrival notification did not fire. It still did not fire after the tester traveled approximately 1.1 miles away and returned, and the request remained pending.
+
+The initial hypotheses were that 150 meters was too small for reliable region hysteresis or that iOS had not established a clear outside state. The successful diagnostic weakens both explanations: dynamically installed 150-meter and 500-meter requests subsequently fired after an entirely backgrounded approach.
+
+The leading implementation difference is identifier handling. The successful test used new, independent notification and region identifiers instead of reusing the Area A slot. This is evidence for preferring fresh identifiers during rotation, but it does **not** establish a general iOS rule or prove that identifier reuse caused the failure.
+
+### What was proven
+
+- Significant-location-change monitoring can provide a low-power native wake after meaningful movement while ThereYouGo is backgrounded.
+- Native Swift can use that wake to rotate system-owned `UNLocationNotificationTrigger` destinations without React Native or JavaScript running.
+- Newly installed, independently identified destination triggers can subsequently deliver arrival notifications while the app remains backgrounded.
+- The architecture does not require continuous GPS tracking or a connection to the development computer.
+- Verification-before-removal is a workable update sequence: install and verify the new window, then remove the old destination.
+
+This validates the core rotating-local-window architecture: native iOS can maintain a small, relevant set of arrival triggers as the user moves.
+
+### What remains uncertain
+
+- Whether same-identifier replacement is intrinsically unreliable or the earlier failure had another cause.
+- The best production radius, hysteresis policy, and dwell/visit heuristics.
+- Behavior after user force-quit, device reboot, reduced-accuracy authorization, disabled services, or extended offline periods.
+- How many destinations should be active, how they should be prioritized, and how often rotation should occur.
+- How product logic will supply and persist destination candidates for native background use.
+- Long-term reliability, battery impact, and behavior near iOS region-monitoring limits.
+
+### Spike cleanup
+
+The hard-coded Area A/Area B plan, dual-radius UI, test-only bridge methods, and debug receipt were removed after the result was recorded. The generic native module for scheduling, inspecting, and canceling location notifications remains. Production rotation should reintroduce the validated native lifecycle pattern only after destination selection and persistence contracts are deliberately designed.
+
 ## Broader visit-detection hypothesis
 
 ### Hypothesis

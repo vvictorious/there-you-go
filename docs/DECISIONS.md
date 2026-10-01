@@ -27,3 +27,13 @@ The spike has no backend, AI integration, maps service, or POI provider. It coll
 ### Keep manual location configuration out of the intended UX
 
 The eventual product should infer where and when a reminder is useful. Users should not need to configure stores, geofences, radiuses, or locations.
+
+## Native destination rotation — 2026-10-01
+
+### Use a native rotating local window
+
+Use native iOS significant-location-change monitoring as the low-power signal for reconsidering nearby destinations while the app is backgrounded. Native code may then install and verify a small window of system-owned `UNLocationNotificationTrigger` requests. React Native does not need to remain active, and the design must not depend on continuous GPS tracking.
+
+When rotating destinations, install and verify the new requests before removing the old requests. Prefer fresh, independent notification and region identifiers for newly selected destinations. A failed test reused one identifier; a successful test used fresh identifiers. This supports the preference but does not prove that identifier reuse is categorically unsupported by iOS.
+
+Destination inference, ranking, radius policy, visit classification, and the native persistence contract remain undecided. The completed spike validates the lifecycle mechanism, not those product policies.
