@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   PanResponder,
@@ -26,24 +26,21 @@ export function ReminderItem({
 }: ReminderItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState(reminder.text);
-  const translation = useRef(new Animated.Value(0)).current;
+  const [translation] = useState(() => new Animated.Value(0));
   const hasCommitted = useRef(false);
 
-  useEffect(() => {
-    if (!isEditing) {
-      setDraft(reminder.text);
-    }
-  }, [isEditing, reminder.text]);
-
-  const settleSwipe = (toValue: number) => {
-    Animated.spring(translation, {
-      toValue,
-      useNativeDriver: true,
-      damping: 22,
-      stiffness: 230,
-      mass: 0.8,
-    }).start();
-  };
+  const settleSwipe = useCallback(
+    (toValue: number) => {
+      Animated.spring(translation, {
+        toValue,
+        useNativeDriver: true,
+        damping: 22,
+        stiffness: 230,
+        mass: 0.8,
+      }).start();
+    },
+    [translation],
+  );
 
   const panResponder = useMemo(
     () =>
@@ -64,7 +61,7 @@ export function ReminderItem({
         },
         onPanResponderTerminate: () => settleSwipe(0),
       }),
-    [isEditing, translation],
+    [isEditing, settleSwipe, translation],
   );
 
   const startEditing = () => {

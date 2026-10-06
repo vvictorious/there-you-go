@@ -52,3 +52,21 @@ domain module. Its external provider sits behind an application-owned
 interface so future Google-specific response types remain at the integration
 boundary. Google Places, persistence, authentication, and deployment
 infrastructure remain out of scope.
+
+## Mobile place-candidate integration — 2026-10-06
+
+### Keep transport and orchestration outside the screen
+
+The mobile app owns a small typed `/places/candidates` client and runtime
+response validation. A focused hook reacts to loaded reminder changes, requests
+foreground location only when an exact case-insensitive `Milk` reminder exists,
+and logs the integration result. `HomeScreen` activates the hook but does not
+own networking or location logic.
+
+The server origin is supplied through `EXPO_PUBLIC_API_BASE_URL`; this is a
+non-secret address intended to be a Mac LAN URL during physical-device
+development. Google credentials remain exclusively in the server environment.
+
+Candidate state, retries, background synchronization, ranking, and native
+location-notification scheduling remain intentionally undecided until this
+foreground vertical slice is validated on a physical iPhone.

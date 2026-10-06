@@ -11,6 +11,7 @@ import {
 
 import { ReminderInput } from '../components/ReminderInput';
 import { ReminderItem } from '../components/ReminderItem';
+import { usePlaceCandidates } from '../hooks/usePlaceCandidates';
 import { useReminders } from '../hooks/useReminders';
 
 export function HomeScreen() {
@@ -22,6 +23,11 @@ export function HomeScreen() {
     updateReminder,
     deleteReminder,
   } = useReminders();
+
+  usePlaceCandidates({
+    isLoadingReminders: isLoading,
+    reminders,
+  });
 
   return (
     <SafeAreaView style={styles.safeArea}>

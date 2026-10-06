@@ -9,7 +9,13 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.anonymous.there-you-go",
-      "appleTeamId": "4RN9YDZ3N3"
+      "appleTeamId": "4RN9YDZ3N3",
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsLocalNetworking": true
+        },
+        "NSLocalNetworkUsageDescription": "Allow ThereYouGo to connect to the development server on your local network."
+      }
     },
     "android": {
       "adaptiveIcon": {
