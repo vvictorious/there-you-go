@@ -1,0 +1,128 @@
+import {
+  BadGatewayException,
+  Injectable,
+  ServiceUnavailableException,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+
+import type {
+  DestinationCategory,
+  PlaceCandidate,
+  PlaceSearchRequest,
+  PlacesProvider,
+} from './places-provider';
+
+export const GOOGLE_NEARBY_SEARCH_URL =
+  'https://places.googleapis.com/v1/places:searchNearby';
+export const GOOGLE_PLACES_FIELD_MASK =
+  'places.id,places.displayName,places.location';
+export const NEARBY_SEARCH_RADIUS_METERS = 3218.688;
+export const NEARBY_CANDIDATE_LIMIT = 5;
+
+const GOOGLE_PLACE_TYPES: Readonly<
+  Record<DestinationCategory, readonly string[]>
+> = {
+  'grocery-store': ['grocery_store'],
+};
+
+interface GoogleNearbySearchResponse {
+  places?: GooglePlace[];
+}
+
+interface GooglePlace {
+  id?: string;
+  displayName?: {
+    text?: string;
+  };
+  location?: {
+    latitude?: number;
+    longitude?: number;
+  };
+}
+
+@Injectable()
+export class GooglePlacesProvider implements PlacesProvider {
+  constructor(private readonly config: ConfigService) {}
+
+  async search(
+    request: PlaceSearchRequest,
+  ): Promise<readonly PlaceCandidate[]> {
+    const apiKey = this.config.get<string>('GOOGLE_PLACES_API_KEY');
+
+    if (!apiKey) {
+      throw new ServiceUnavailableException(
+        'Places requires GOOGLE_PLACES_API_KEY to be configured',
+      );
+    }
+
+    const includedTypes = [
+      ...new Set(
+        request.categories.flatMap((category) => GOOGLE_PLACE_TYPES[category]),
+      ),
+    ];
+
+    let response: Response;
+    try {
+      response = await fetch(GOOGLE_NEARBY_SEARCH_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Goog-Api-Key': apiKey,
+          'X-Goog-FieldMask': GOOGLE_PLACES_FIELD_MASK,
+        },
+        body: JSON.stringify({
+          includedTypes,
+          maxResultCount: NEARBY_CANDIDATE_LIMIT,
+          rankPreference: 'DISTANCE',
+          locationRestriction: {
+            circle: {
+              center: request.location,
+              radius: NEARBY_SEARCH_RADIUS_METERS,
+            },
+          },
+        }),
+      });
+    } catch {
+      throw new BadGatewayException('Google Places request failed');
+    }
+
+    if (!response.ok) {
+      throw new BadGatewayException(
+        `Google Places request failed with status ${response.status}`,
+      );
+    }
+
+    let body: GoogleNearbySearchResponse;
+    try {
+      body = (await response.json()) as GoogleNearbySearchResponse;
+    } catch {
+      throw new BadGatewayException(
+        'Google Places returned an invalid response',
+      );
+    }
+
+    return (body.places ?? []).flatMap((place) => {
+      const { id, displayName, location } = place;
+
+      if (
+        !id ||
+        !displayName?.text ||
+        typeof location?.latitude !== 'number' ||
+        typeof location.longitude !== 'number'
+      ) {
+        return [];
+      }
+
+      return [
+        {
+          id,
+          name: displayName.text,
+          location: {
+            latitude: location.latitude,
+            longitude: location.longitude,
+          },
+        },
+      ];
+    });
+  }
+}

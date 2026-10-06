@@ -37,3 +37,18 @@ Use native iOS significant-location-change monitoring as the low-power signal fo
 When rotating destinations, install and verify the new requests before removing the old requests. Prefer fresh, independent notification and region identifiers for newly selected destinations. A failed test reused one identifier; a successful test used fresh identifiers. This supports the preference but does not prove that identifier reuse is categorically unsupported by iOS.
 
 Destination inference, ranking, radius policy, visit classification, and the native persistence contract remain undecided. The completed spike validates the lifecycle mechanism, not those product policies.
+
+## Server-side product boundary — 2026-10-06
+
+### Add an independent NestJS server
+
+Keep the Expo mobile application at the repository root and add a separate
+Node project under `/server`. The two projects have independent dependencies,
+lockfiles, and configuration; no workspace or monorepo framework is used.
+
+The server owns secret-backed integrations and product logic that should not
+run in or expose credentials to the mobile application. Places is the first
+domain module. Its external provider sits behind an application-owned
+interface so future Google-specific response types remain at the integration
+boundary. Google Places, persistence, authentication, and deployment
+infrastructure remain out of scope.
