@@ -61,14 +61,22 @@ export function usePlaceCandidates({
           return;
         }
 
-        console.info(
-          '[places] Candidate results returned:',
-          result.results,
-        );
-        console.info(
-          '[places] Unsupported item IDs returned:',
-          result.unsupportedItemIds,
-        );
+        const itemsById = new Map(items.map((item) => [item.id, item]));
+
+        for (const { itemId, candidates } of result.results) {
+          const itemText = itemsById.get(itemId)?.text ?? 'Unknown item';
+          const candidateNames =
+            candidates.map(({ name }) => name).join(', ') || '(none)';
+
+          console.info(
+            `[places] "${itemText}" (${itemId})\nCandidates: ${candidateNames}`,
+          );
+        }
+
+        for (const itemId of result.unsupportedItemIds) {
+          const itemText = itemsById.get(itemId)?.text ?? 'Unknown item';
+          console.info(`[places] Unsupported item: "${itemText}" (${itemId})`);
+        }
       } catch (error) {
         if (abortController.signal.aborted) {
           return;

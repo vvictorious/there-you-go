@@ -70,7 +70,7 @@ describe('GooglePlacesProvider', () => {
         throw new Error('Expected a JSON request body');
       }
       expect(JSON.parse(options.body)).toEqual({
-        includedTypes: [googleType],
+        includedPrimaryTypes: [googleType],
         maxResultCount: NEARBY_CANDIDATE_LIMIT,
         rankPreference: 'DISTANCE',
         locationRestriction: {

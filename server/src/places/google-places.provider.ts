@@ -57,7 +57,7 @@ export class GooglePlacesProvider implements PlacesProvider {
       );
     }
 
-    const includedTypes = [
+    const includedPrimaryTypes = [
       ...new Set(
         request.categories.flatMap((category) => GOOGLE_PLACE_TYPES[category]),
       ),
@@ -73,7 +73,7 @@ export class GooglePlacesProvider implements PlacesProvider {
           'X-Goog-FieldMask': GOOGLE_PLACES_FIELD_MASK,
         },
         body: JSON.stringify({
-          includedTypes,
+          includedPrimaryTypes,
           maxResultCount: NEARBY_CANDIDATE_LIMIT,
           rankPreference: 'DISTANCE',
           locationRestriction: {
