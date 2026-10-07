@@ -11,46 +11,61 @@ describe('parsePlaceCandidatesResponse', () => {
   it('parses the app-owned server response', () => {
     expect(
       parsePlaceCandidatesResponse({
-        candidates: [
+        results: [
           {
-            id: 'place-1',
-            name: 'Sprouts Farmers Market',
-            location: {
-              latitude: 34.027,
-              longitude: -118.393,
-            },
+            itemId: 'item-1',
+            candidates: [
+              {
+                id: 'place-1',
+                name: 'Sprouts Farmers Market',
+                location: {
+                  latitude: 34.027,
+                  longitude: -118.393,
+                },
+              },
+            ],
           },
         ],
-        unsupportedReminders: ['Dry cleaning'],
+        unsupportedItemIds: ['item-2'],
       }),
     ).toEqual({
-      candidates: [
+      results: [
         {
-          id: 'place-1',
-          name: 'Sprouts Farmers Market',
-          location: {
-            latitude: 34.027,
-            longitude: -118.393,
-          },
+          itemId: 'item-1',
+          candidates: [
+            {
+              id: 'place-1',
+              name: 'Sprouts Farmers Market',
+              location: {
+                latitude: 34.027,
+                longitude: -118.393,
+              },
+            },
+          ],
         },
       ],
-      unsupportedReminders: ['Dry cleaning'],
+      unsupportedItemIds: ['item-2'],
     });
   });
 
   it.each([
     null,
     {},
-    { candidates: [], unsupportedReminders: [42] },
+    { results: [], unsupportedItemIds: [42] },
     {
-      candidates: [
+      results: [
         {
-          id: 'place-1',
-          name: 'Market',
-          location: { latitude: '34', longitude: -118.393 },
+          itemId: 'item-1',
+          candidates: [
+            {
+              id: 'place-1',
+              name: 'Market',
+              location: { latitude: '34', longitude: -118.393 },
+            },
+          ],
         },
       ],
-      unsupportedReminders: [],
+      unsupportedItemIds: [],
     },
   ])('rejects an invalid response: %j', (response) => {
     expect(() => parsePlaceCandidatesResponse(response)).toThrow();
@@ -63,8 +78,8 @@ describe('findPlaceCandidates', () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(
         JSON.stringify({
-          candidates: [],
-          unsupportedReminders: [],
+          results: [],
+          unsupportedItemIds: [],
         }),
         {
           headers: { 'Content-Type': 'application/json' },
@@ -75,13 +90,13 @@ describe('findPlaceCandidates', () => {
     vi.stubGlobal('fetch', fetchMock);
 
     const request = {
-      reminders: ['Milk'],
+      items: [{ id: 'item-1', text: 'Milk' }],
       location: { latitude: 34.027, longitude: -118.393 },
     };
 
     await expect(findPlaceCandidates(request)).resolves.toEqual({
-      candidates: [],
-      unsupportedReminders: [],
+      results: [],
+      unsupportedItemIds: [],
     });
     expect(fetchMock).toHaveBeenCalledWith(
       'http://192.168.1.23:3000/places/candidates',

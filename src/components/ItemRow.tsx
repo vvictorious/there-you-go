@@ -9,23 +9,23 @@ import {
   View,
 } from 'react-native';
 
-import type { Reminder } from '../models/Reminder';
+import type { Item } from '../models/Item';
 
 const DELETE_ACTION_WIDTH = 88;
 
-type ReminderItemProps = {
-  reminder: Reminder;
+type ItemRowProps = {
+  item: Item;
   onDelete: (id: string) => void;
   onEdit: (id: string, text: string) => void;
 };
 
-export function ReminderItem({
-  reminder,
+export function ItemRow({
+  item,
   onDelete,
   onEdit,
-}: ReminderItemProps) {
+}: ItemRowProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [draft, setDraft] = useState(reminder.text);
+  const [draft, setDraft] = useState(item.text);
   const [translation] = useState(() => new Animated.Value(0));
   const hasCommitted = useRef(false);
 
@@ -67,7 +67,7 @@ export function ReminderItem({
   const startEditing = () => {
     settleSwipe(0);
     hasCommitted.current = false;
-    setDraft(reminder.text);
+    setDraft(item.text);
     setIsEditing(true);
   };
 
@@ -78,15 +78,15 @@ export function ReminderItem({
 
     hasCommitted.current = true;
     setIsEditing(false);
-    onEdit(reminder.id, draft);
+    onEdit(item.id, draft);
   };
 
   return (
     <View style={styles.swipeContainer}>
       <Pressable
-        accessibilityLabel={`Delete ${reminder.text}`}
+        accessibilityLabel={`Delete ${item.text}`}
         accessibilityRole="button"
-        onPress={() => onDelete(reminder.id)}
+        onPress={() => onDelete(item.id)}
         style={({ pressed }) => [
           styles.deleteAction,
           pressed && styles.deleteActionPressed,
@@ -101,7 +101,7 @@ export function ReminderItem({
       >
         {isEditing ? (
           <TextInput
-            accessibilityLabel={`Edit ${reminder.text}`}
+            accessibilityLabel={`Edit ${item.text}`}
             autoFocus
             onBlur={commitEdit}
             onChangeText={setDraft}
@@ -122,7 +122,7 @@ export function ReminderItem({
               pressed && styles.itemPressed,
             ]}
           >
-            <Text style={styles.reminderText}>{reminder.text}</Text>
+            <Text style={styles.itemText}>{item.text}</Text>
           </Pressable>
         )}
       </Animated.View>
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
   itemPressed: {
     backgroundColor: '#f7f6f2',
   },
-  reminderText: {
+  itemText: {
     color: '#272621',
     fontSize: 17,
     lineHeight: 23,

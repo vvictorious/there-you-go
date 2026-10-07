@@ -2,20 +2,20 @@ import * as Location from 'expo-location';
 import { useEffect } from 'react';
 
 import { findPlaceCandidates } from '../api/places';
-import type { Reminder } from '../models/Reminder';
-import { containsMilkReminder } from '../services/placeCandidateDiscovery';
+import type { Item } from '../models/Item';
+import { containsMilkItem } from '../services/placeCandidateDiscovery';
 
 type UsePlaceCandidatesOptions = {
-  isLoadingReminders: boolean;
-  reminders: readonly Reminder[];
+  isLoadingItems: boolean;
+  items: readonly Item[];
 };
 
 export function usePlaceCandidates({
-  isLoadingReminders,
-  reminders,
+  isLoadingItems,
+  items,
 }: UsePlaceCandidatesOptions) {
   useEffect(() => {
-    if (isLoadingReminders || !containsMilkReminder(reminders)) {
+    if (isLoadingItems || !containsMilkItem(items)) {
       return;
     }
 
@@ -23,7 +23,7 @@ export function usePlaceCandidates({
     let isActive = true;
 
     async function loadCandidates() {
-      console.info('[places] Milk reminder detected.');
+      console.info('[places] Milk item detected.');
 
       try {
         const permission = await Location.requestForegroundPermissionsAsync();
@@ -53,7 +53,7 @@ export function usePlaceCandidates({
 
         const result = await findPlaceCandidates(
           {
-            reminders: reminders.map((reminder) => reminder.text),
+            items: items.map(({ id, text }) => ({ id, text })),
             location,
           },
           { signal: abortController.signal },
@@ -63,12 +63,12 @@ export function usePlaceCandidates({
         }
 
         console.info(
-          '[places] Candidate names returned:',
-          result.candidates.map((candidate) => candidate.name),
+          '[places] Candidate results returned:',
+          result.results,
         );
         console.info(
-          '[places] Unsupported reminders returned:',
-          result.unsupportedReminders,
+          '[places] Unsupported item IDs returned:',
+          result.unsupportedItemIds,
         );
       } catch (error) {
         if (abortController.signal.aborted) {
@@ -76,7 +76,7 @@ export function usePlaceCandidates({
         }
 
         console.warn(
-          '[places] Candidate lookup failed; reminders remain available.',
+          '[places] Candidate lookup failed; items remain available.',
           error,
         );
       }
@@ -88,5 +88,5 @@ export function usePlaceCandidates({
       isActive = false;
       abortController.abort();
     };
-  }, [isLoadingReminders, reminders]);
+  }, [isLoadingItems, items]);
 }

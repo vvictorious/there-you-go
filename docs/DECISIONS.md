@@ -58,8 +58,8 @@ infrastructure remain out of scope.
 ### Keep transport and orchestration outside the screen
 
 The mobile app owns a small typed `/places/candidates` client and runtime
-response validation. A focused hook reacts to loaded reminder changes, requests
-foreground location only when an exact case-insensitive `Milk` reminder exists,
+response validation. A focused hook reacts to loaded item changes, requests
+foreground location only when an exact case-insensitive `Milk` item exists,
 and logs the integration result. `HomeScreen` activates the hook but does not
 own networking or location logic.
 

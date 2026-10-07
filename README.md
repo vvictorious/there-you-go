@@ -59,9 +59,9 @@ in `server/.env` and is never included in the mobile app.
    `Milk`. Accept foreground location and local-network access when prompted.
 
 The development logs will show Milk detection, the coordinates obtained, the
-request, candidate names, and unsupported reminders. A denied permission,
+request, candidate names, and unsupported items. A denied permission,
 missing configuration, invalid response, or unavailable server is logged and
-does not alter the saved reminder list. After editing `.env.local`, fully reload
+does not alter the saved item list. After editing `.env.local`, fully reload
 the app so Expo inlines the new value.
 
 This milestone only fetches and parses candidates. It does not pass them to the

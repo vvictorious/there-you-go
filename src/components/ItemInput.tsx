@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
-type ReminderInputProps = {
+type ItemInputProps = {
   disabled?: boolean;
   onAdd: (text: string) => void;
 };
 
-export function ReminderInput({ disabled = false, onAdd }: ReminderInputProps) {
+export function ItemInput({ disabled = false, onAdd }: ItemInputProps) {
   const [text, setText] = useState('');
   const canSubmit = !disabled && text.trim().length > 0;
 
@@ -22,7 +22,7 @@ export function ReminderInput({ disabled = false, onAdd }: ReminderInputProps) {
   return (
     <View style={styles.container}>
       <TextInput
-        accessibilityLabel="New reminder"
+        accessibilityLabel="New item"
         editable={!disabled}
         onChangeText={setText}
         onSubmitEditing={handleSubmit}
@@ -35,7 +35,7 @@ export function ReminderInput({ disabled = false, onAdd }: ReminderInputProps) {
         value={text}
       />
       <Pressable
-        accessibilityLabel="Add reminder"
+        accessibilityLabel="Add item"
         accessibilityRole="button"
         disabled={!canSubmit}
         hitSlop={6}

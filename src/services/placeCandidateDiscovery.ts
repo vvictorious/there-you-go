@@ -1,7 +1,7 @@
-import type { Reminder } from '../models/Reminder';
+import type { Item } from '../models/Item';
 
-export function containsMilkReminder(reminders: readonly Reminder[]) {
-  return reminders.some(
-    (reminder) => reminder.text.trim().toLowerCase() === 'milk',
+export function containsMilkItem(items: readonly Item[]) {
+  return items.some(
+    (item) => item.text.trim().toLowerCase() === 'milk',
   );
 }

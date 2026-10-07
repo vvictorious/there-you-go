@@ -9,24 +9,24 @@ import {
   View,
 } from 'react-native';
 
-import { ReminderInput } from '../components/ReminderInput';
-import { ReminderItem } from '../components/ReminderItem';
+import { ItemInput } from '../components/ItemInput';
+import { ItemRow } from '../components/ItemRow';
+import { useItems } from '../hooks/useItems';
 import { usePlaceCandidates } from '../hooks/usePlaceCandidates';
-import { useReminders } from '../hooks/useReminders';
 
 export function HomeScreen() {
   const {
-    reminders,
+    items,
     isLoading,
     storageError,
-    addReminder,
-    updateReminder,
-    deleteReminder,
-  } = useReminders();
+    addItem,
+    updateItem,
+    deleteItem,
+  } = useItems();
 
   usePlaceCandidates({
-    isLoadingReminders: isLoading,
-    reminders,
+    isLoadingItems: isLoading,
+    items,
   });
 
   return (
@@ -41,7 +41,7 @@ export function HomeScreen() {
           <Text style={styles.subtitle}>
             Keep a simple list for the next time you’re out.
           </Text>
-          <ReminderInput disabled={isLoading} onAdd={addReminder} />
+          <ItemInput disabled={isLoading} onAdd={addItem} />
           {storageError ? (
             <Text accessibilityRole="alert" style={styles.error}>
               {storageError}
@@ -52,12 +52,12 @@ export function HomeScreen() {
         <FlatList
           contentContainerStyle={[
             styles.listContent,
-            reminders.length === 0 && styles.emptyListContent,
+            items.length === 0 && styles.emptyListContent,
           ]}
-          data={reminders}
+          data={items}
           keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
           keyboardShouldPersistTaps="handled"
-          keyExtractor={(reminder) => reminder.id}
+          keyExtractor={(item) => item.id}
           ListEmptyComponent={
             isLoading ? (
               <View style={styles.emptyState}>
@@ -73,10 +73,10 @@ export function HomeScreen() {
             )
           }
           renderItem={({ item }) => (
-            <ReminderItem
-              onDelete={deleteReminder}
-              onEdit={updateReminder}
-              reminder={item}
+            <ItemRow
+              onDelete={deleteItem}
+              onEdit={updateItem}
+              item={item}
             />
           )}
         />

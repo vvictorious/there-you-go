@@ -1,30 +1,30 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import type { Reminder } from '../models/Reminder';
+import type { Item } from '../models/Item';
 
 const STORAGE_KEY = '@there-you-go/reminders:v1';
 
-function isReminder(value: unknown): value is Reminder {
+function isItem(value: unknown): value is Item {
   if (!value || typeof value !== 'object') {
     return false;
   }
 
-  const reminder = value as Record<string, unknown>;
+  const item = value as Record<string, unknown>;
   return (
-    typeof reminder.id === 'string' &&
-    typeof reminder.text === 'string' &&
-    typeof reminder.createdAt === 'string' &&
-    typeof reminder.updatedAt === 'string'
+    typeof item.id === 'string' &&
+    typeof item.text === 'string' &&
+    typeof item.createdAt === 'string' &&
+    typeof item.updatedAt === 'string'
   );
 }
 
-function createReminderId() {
+function createItemId() {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-export function useReminders() {
-  const [reminders, setReminders] = useState<Reminder[]>([]);
+export function useItems() {
+  const [items, setItems] = useState<Item[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [storageError, setStorageError] = useState<string | null>(null);
   const writeQueue = useRef<Promise<void>>(Promise.resolve());
@@ -33,7 +33,7 @@ export function useReminders() {
   useEffect(() => {
     let isActive = true;
 
-    async function loadReminders() {
+    async function loadItems() {
       try {
         const storedValue = await AsyncStorage.getItem(STORAGE_KEY);
         if (!isActive || storedValue === null) {
@@ -41,14 +41,14 @@ export function useReminders() {
         }
 
         const parsedValue: unknown = JSON.parse(storedValue);
-        if (!Array.isArray(parsedValue) || !parsedValue.every(isReminder)) {
-          throw new Error('Stored reminders have an unexpected format.');
+        if (!Array.isArray(parsedValue) || !parsedValue.every(isItem)) {
+          throw new Error('Stored items have an unexpected format.');
         }
 
-        setReminders(parsedValue);
+        setItems(parsedValue);
       } catch {
         if (isActive) {
-          setStorageError('Saved reminders could not be loaded.');
+          setStorageError('Saved items could not be loaded.');
         }
       } finally {
         if (isActive) {
@@ -57,17 +57,17 @@ export function useReminders() {
       }
     }
 
-    void loadReminders();
+    void loadItems();
 
     return () => {
       isActive = false;
     };
   }, []);
 
-  const persist = useCallback((nextReminders: Reminder[]) => {
+  const persist = useCallback((nextItems: Item[]) => {
     writeQueue.current = writeQueue.current
       .catch(() => undefined)
-      .then(() => AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(nextReminders)))
+      .then(() => AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(nextItems)))
       .then(() => setStorageError(null))
       .catch(() => {
         setStorageError('Changes could not be saved on this device.');
@@ -83,56 +83,56 @@ export function useReminders() {
       return;
     }
 
-    persist(reminders);
-  }, [isLoading, persist, reminders]);
+    persist(items);
+  }, [isLoading, persist, items]);
 
-  const addReminder = useCallback((text: string) => {
+  const addItem = useCallback((text: string) => {
     const normalizedText = text.trim();
     if (!normalizedText) {
       return;
     }
 
     const now = new Date().toISOString();
-    const reminder: Reminder = {
-      id: createReminderId(),
+    const item: Item = {
+      id: createItemId(),
       text: normalizedText,
       createdAt: now,
       updatedAt: now,
     };
 
-    setReminders((currentReminders) => [reminder, ...currentReminders]);
+    setItems((currentItems) => [item, ...currentItems]);
   }, []);
 
-  const updateReminder = useCallback((id: string, text: string) => {
+  const updateItem = useCallback((id: string, text: string) => {
     const normalizedText = text.trim();
 
-    setReminders((currentReminders) =>
+    setItems((currentItems) =>
       normalizedText
-        ? currentReminders.map((reminder) =>
-            reminder.id === id
+        ? currentItems.map((item) =>
+            item.id === id
               ? {
-                  ...reminder,
+                  ...item,
                   text: normalizedText,
                   updatedAt: new Date().toISOString(),
                 }
-              : reminder,
+              : item,
           )
-        : currentReminders.filter((reminder) => reminder.id !== id),
+        : currentItems.filter((item) => item.id !== id),
     );
   }, []);
 
-  const deleteReminder = useCallback((id: string) => {
-    setReminders((currentReminders) =>
-      currentReminders.filter((reminder) => reminder.id !== id),
+  const deleteItem = useCallback((id: string) => {
+    setItems((currentItems) =>
+      currentItems.filter((item) => item.id !== id),
     );
   }, []);
 
   return {
-    reminders,
+    items,
     isLoading,
     storageError,
-    addReminder,
-    updateReminder,
-    deleteReminder,
+    addItem,
+    updateItem,
+    deleteItem,
   };
 }

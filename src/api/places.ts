@@ -1,5 +1,8 @@
 export type PlaceCandidatesRequest = {
-  reminders: string[];
+  items: {
+    id: string;
+    text: string;
+  }[];
   location: {
     latitude: number;
     longitude: number;
@@ -16,8 +19,11 @@ export type PlaceCandidate = {
 };
 
 export type PlaceCandidatesResponse = {
-  candidates: PlaceCandidate[];
-  unsupportedReminders: string[];
+  results: {
+    itemId: string;
+    candidates: PlaceCandidate[];
+  }[];
+  unsupportedItemIds: string[];
 };
 
 type RequestOptions = {
@@ -84,18 +90,39 @@ export function parsePlaceCandidatesResponse(
 
   const response = value as Record<string, unknown>;
   if (
-    !Array.isArray(response.candidates) ||
-    !Array.isArray(response.unsupportedReminders) ||
-    !response.unsupportedReminders.every(
-      (reminder) => typeof reminder === 'string',
+    !Array.isArray(response.results) ||
+    !Array.isArray(response.unsupportedItemIds) ||
+    !response.unsupportedItemIds.every(
+      (itemId) => typeof itemId === 'string',
     )
   ) {
     throw new Error('The server returned an invalid place candidates response.');
   }
 
   return {
-    candidates: response.candidates.map(parseCandidate),
-    unsupportedReminders: response.unsupportedReminders,
+    results: response.results.map((value) => {
+      if (!value || typeof value !== 'object') {
+        throw new Error(
+          'The server returned an invalid place candidates result.',
+        );
+      }
+
+      const result = value as Record<string, unknown>;
+      if (
+        typeof result.itemId !== 'string' ||
+        !Array.isArray(result.candidates)
+      ) {
+        throw new Error(
+          'The server returned an invalid place candidates result.',
+        );
+      }
+
+      return {
+        itemId: result.itemId,
+        candidates: result.candidates.map(parseCandidate),
+      };
+    }),
+    unsupportedItemIds: response.unsupportedItemIds,
   };
 }
 

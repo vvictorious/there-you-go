@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import type { Reminder } from '../models/Reminder';
-import { containsMilkReminder } from '../services/placeCandidateDiscovery';
+import type { Item } from '../models/Item';
+import { containsMilkItem } from '../services/placeCandidateDiscovery';
 
-function reminder(text: string): Reminder {
+function item(text: string): Item {
   return {
     id: text,
     text,
@@ -12,13 +12,13 @@ function reminder(text: string): Reminder {
   };
 }
 
-describe('containsMilkReminder', () => {
+describe('containsMilkItem', () => {
   it.each(['Milk', 'milk', '  MILK  '])('detects %j', (text) => {
-    expect(containsMilkReminder([reminder(text)])).toBe(true);
+    expect(containsMilkItem([item(text)])).toBe(true);
   });
 
-  it('does not match unsupported reminder text', () => {
-    expect(containsMilkReminder([reminder('Oat milk'), reminder('Bread')])).toBe(
+  it('does not match unsupported item text', () => {
+    expect(containsMilkItem([item('Oat milk'), item('Bread')])).toBe(
       false,
     );
   });

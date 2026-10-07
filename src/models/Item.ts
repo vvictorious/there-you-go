@@ -1,4 +1,4 @@
-export type Reminder = {
+export type Item = {
   id: string;
   text: string;
   createdAt: string;
