@@ -23,15 +23,26 @@ export class CurrentLocationDto {
   longitude!: number;
 }
 
+export class ReminderDto {
+  @IsString()
+  @Matches(/\S/, {
+    message: 'reminder id must contain at least one non-whitespace character',
+  })
+  id!: string;
+
+  @IsString()
+  @Matches(/\S/, {
+    message: 'reminder text must contain at least one non-whitespace character',
+  })
+  text!: string;
+}
+
 export class FindPlaceCandidatesDto {
   @IsArray()
   @ArrayMinSize(1)
-  @IsString({ each: true })
-  @Matches(/\S/, {
-    each: true,
-    message: 'each reminder must contain at least one non-whitespace character',
-  })
-  reminders!: string[];
+  @ValidateNested({ each: true })
+  @Type(() => ReminderDto)
+  reminders!: ReminderDto[];
 
   @IsDefined()
   @ValidateNested()

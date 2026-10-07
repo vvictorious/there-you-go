@@ -36,10 +36,13 @@ describe('PlacesService', () => {
       const location = { latitude: 34.05, longitude: -118.25 };
 
       await expect(
-        service.findCandidates({ reminders: [reminder], location }),
+        service.findCandidates({
+          reminders: [{ id: 'reminder-1', text: reminder }],
+          location,
+        }),
       ).resolves.toEqual({
-        candidates,
-        unsupportedReminders: [],
+        results: [{ reminderId: 'reminder-1', candidates }],
+        unsupportedReminderIds: [],
       });
       expect(search).toHaveBeenCalledWith({
         categories: ['grocery-store'],
@@ -51,13 +54,16 @@ describe('PlacesService', () => {
   it('returns unsupported reminders without calling the provider', async () => {
     const { search, service } = await createService();
     const request = {
-      reminders: ['Bread', 'Dry cleaning'],
+      reminders: [
+        { id: 'reminder-1', text: 'Bread' },
+        { id: 'reminder-2', text: 'Dry cleaning' },
+      ],
       location: { latitude: 34.05, longitude: -118.25 },
     };
 
     await expect(service.findCandidates(request)).resolves.toEqual({
-      candidates: [],
-      unsupportedReminders: ['Bread', 'Dry cleaning'],
+      results: [],
+      unsupportedReminderIds: ['reminder-1', 'reminder-2'],
     });
     expect(search).not.toHaveBeenCalled();
   });
@@ -68,12 +74,19 @@ describe('PlacesService', () => {
 
     await expect(
       service.findCandidates({
-        reminders: ['Milk', 'Bread', 'milk'],
+        reminders: [
+          { id: 'reminder-1', text: 'Milk' },
+          { id: 'reminder-2', text: 'Bread' },
+          { id: 'reminder-3', text: 'milk' },
+        ],
         location: { latitude: 34.05, longitude: -118.25 },
       }),
     ).resolves.toEqual({
-      candidates: [],
-      unsupportedReminders: ['Bread'],
+      results: [
+        { reminderId: 'reminder-1', candidates: [] },
+        { reminderId: 'reminder-3', candidates: [] },
+      ],
+      unsupportedReminderIds: ['reminder-2'],
     });
     expect(search).toHaveBeenCalledTimes(1);
   });

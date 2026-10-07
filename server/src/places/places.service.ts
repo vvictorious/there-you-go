@@ -8,7 +8,10 @@ import type {
 } from './places-provider';
 
 export interface FindPlaceCandidatesRequest {
-  reminders: readonly string[];
+  reminders: readonly {
+    id: string;
+    text: string;
+  }[];
   location: {
     latitude: number;
     longitude: number;
@@ -16,8 +19,11 @@ export interface FindPlaceCandidatesRequest {
 }
 
 export interface FindPlaceCandidatesResult {
-  candidates: readonly PlaceCandidate[];
-  unsupportedReminders: readonly string[];
+  results: readonly {
+    reminderId: string;
+    candidates: readonly PlaceCandidate[];
+  }[];
+  unsupportedReminderIds: readonly string[];
 }
 
 const REMINDER_CATEGORIES: Readonly<Record<string, DestinationCategory>> = {
@@ -34,28 +40,41 @@ export class PlacesService {
   async findCandidates(
     request: FindPlaceCandidatesRequest,
   ): Promise<FindPlaceCandidatesResult> {
-    const categories = new Set<DestinationCategory>();
-    const unsupportedReminders: string[] = [];
+    const remindersByCategory = new Map<
+      DestinationCategory,
+      { id: string; text: string }[]
+    >();
+    const unsupportedReminderIds: string[] = [];
 
     for (const reminder of request.reminders) {
-      const category = REMINDER_CATEGORIES[reminder.trim().toLowerCase()];
+      const category = REMINDER_CATEGORIES[reminder.text.trim().toLowerCase()];
 
       if (category) {
-        categories.add(category);
+        const reminders = remindersByCategory.get(category) ?? [];
+        reminders.push(reminder);
+        remindersByCategory.set(category, reminders);
       } else {
-        unsupportedReminders.push(reminder);
+        unsupportedReminderIds.push(reminder.id);
       }
     }
 
-    if (categories.size === 0) {
-      return { candidates: [], unsupportedReminders };
-    }
+    const resultGroups = await Promise.all(
+      [...remindersByCategory].map(async ([category, reminders]) => {
+        const candidates = await this.provider.search({
+          categories: [category],
+          location: request.location,
+        });
 
-    const candidates = await this.provider.search({
-      categories: [...categories],
-      location: request.location,
-    });
+        return reminders.map((reminder) => ({
+          reminderId: reminder.id,
+          candidates,
+        }));
+      }),
+    );
 
-    return { candidates, unsupportedReminders };
+    return {
+      results: resultGroups.flat(),
+      unsupportedReminderIds,
+    };
   }
 }

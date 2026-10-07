@@ -49,20 +49,25 @@ describe('API (e2e)', () => {
     const response = await request(app.getHttpServer())
       .post('/places/candidates')
       .send({
-        reminders: ['Milk'],
+        reminders: [{ id: 'reminder-1', text: 'Milk' }],
         location: { latitude: 34, longitude: -118.4 },
       })
       .expect(200);
 
     expect(response.body).toEqual({
-      candidates: [
+      results: [
         {
-          id: 'market-1',
-          name: 'Neighborhood Market',
-          location: { latitude: 34.001, longitude: -118.401 },
+          reminderId: 'reminder-1',
+          candidates: [
+            {
+              id: 'market-1',
+              name: 'Neighborhood Market',
+              location: { latitude: 34.001, longitude: -118.401 },
+            },
+          ],
         },
       ],
-      unsupportedReminders: [],
+      unsupportedReminderIds: [],
     });
     expect(search).toHaveBeenCalledWith({
       categories: ['grocery-store'],
@@ -76,13 +81,13 @@ describe('API (e2e)', () => {
     await request(app.getHttpServer())
       .post('/places/candidates')
       .send({
-        reminders: ['Bread'],
+        reminders: [{ id: 'reminder-1', text: 'Bread' }],
         location: { latitude: 34, longitude: -118.4 },
       })
       .expect(200)
       .expect({
-        candidates: [],
-        unsupportedReminders: ['Bread'],
+        results: [],
+        unsupportedReminderIds: ['reminder-1'],
       });
 
     expect(search).not.toHaveBeenCalled();
@@ -90,9 +95,22 @@ describe('API (e2e)', () => {
 
   it.each([
     { reminders: [], location: { latitude: 34, longitude: -118.4 } },
-    { reminders: [''], location: { latitude: 34, longitude: -118.4 } },
-    { reminders: ['Milk'], location: { latitude: 90.1, longitude: -118.4 } },
-    { reminders: ['Milk'], location: { latitude: 34, longitude: 180.1 } },
+    {
+      reminders: [{ id: '', text: 'Milk' }],
+      location: { latitude: 34, longitude: -118.4 },
+    },
+    {
+      reminders: [{ id: 'reminder-1', text: '' }],
+      location: { latitude: 34, longitude: -118.4 },
+    },
+    {
+      reminders: [{ id: 'reminder-1', text: 'Milk' }],
+      location: { latitude: 90.1, longitude: -118.4 },
+    },
+    {
+      reminders: [{ id: 'reminder-1', text: 'Milk' }],
+      location: { latitude: 34, longitude: 180.1 },
+    },
   ])('rejects invalid candidate input', async (body) => {
     await request(app.getHttpServer())
       .post('/places/candidates')

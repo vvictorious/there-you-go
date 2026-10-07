@@ -14,7 +14,7 @@ describe('FindPlaceCandidatesDto', () => {
   it('accepts a valid request', async () => {
     await expect(
       validateRequest({
-        reminders: ['Milk'],
+        reminders: [{ id: 'reminder-1', text: 'Milk' }],
         location: { latitude: 34, longitude: -118.4 },
       }),
     ).resolves.toHaveLength(0);
@@ -22,10 +22,22 @@ describe('FindPlaceCandidatesDto', () => {
 
   it.each([
     { reminders: [], location: { latitude: 34, longitude: -118.4 } },
-    { reminders: [''], location: { latitude: 34, longitude: -118.4 } },
-    { reminders: ['   '], location: { latitude: 34, longitude: -118.4 } },
-    { reminders: ['Milk'], location: { latitude: 91, longitude: -118.4 } },
-    { reminders: ['Milk'], location: { latitude: 34, longitude: -181 } },
+    {
+      reminders: [{ id: '', text: 'Milk' }],
+      location: { latitude: 34, longitude: -118.4 },
+    },
+    {
+      reminders: [{ id: 'reminder-1', text: '   ' }],
+      location: { latitude: 34, longitude: -118.4 },
+    },
+    {
+      reminders: [{ id: 'reminder-1', text: 'Milk' }],
+      location: { latitude: 91, longitude: -118.4 },
+    },
+    {
+      reminders: [{ id: 'reminder-1', text: 'Milk' }],
+      location: { latitude: 34, longitude: -181 },
+    },
   ])('rejects invalid input: %j', async (value) => {
     expect(await validateRequest(value)).not.toHaveLength(0);
   });
