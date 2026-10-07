@@ -8,7 +8,7 @@ import type {
 } from './places-provider';
 
 export interface FindPlaceCandidatesRequest {
-  reminders: readonly {
+  items: readonly {
     id: string;
     text: string;
   }[];
@@ -20,13 +20,13 @@ export interface FindPlaceCandidatesRequest {
 
 export interface FindPlaceCandidatesResult {
   results: readonly {
-    reminderId: string;
+    itemId: string;
     candidates: readonly PlaceCandidate[];
   }[];
-  unsupportedReminderIds: readonly string[];
+  unsupportedItemIds: readonly string[];
 }
 
-const REMINDER_CATEGORIES: Readonly<Record<string, DestinationCategory>> = {
+const ITEM_CATEGORIES: Readonly<Record<string, DestinationCategory>> = {
   milk: 'grocery-store',
 };
 
@@ -40,33 +40,33 @@ export class PlacesService {
   async findCandidates(
     request: FindPlaceCandidatesRequest,
   ): Promise<FindPlaceCandidatesResult> {
-    const remindersByCategory = new Map<
+    const itemsByCategory = new Map<
       DestinationCategory,
       { id: string; text: string }[]
     >();
-    const unsupportedReminderIds: string[] = [];
+    const unsupportedItemIds: string[] = [];
 
-    for (const reminder of request.reminders) {
-      const category = REMINDER_CATEGORIES[reminder.text.trim().toLowerCase()];
+    for (const item of request.items) {
+      const category = ITEM_CATEGORIES[item.text.trim().toLowerCase()];
 
       if (category) {
-        const reminders = remindersByCategory.get(category) ?? [];
-        reminders.push(reminder);
-        remindersByCategory.set(category, reminders);
+        const items = itemsByCategory.get(category) ?? [];
+        items.push(item);
+        itemsByCategory.set(category, items);
       } else {
-        unsupportedReminderIds.push(reminder.id);
+        unsupportedItemIds.push(item.id);
       }
     }
 
     const resultGroups = await Promise.all(
-      [...remindersByCategory].map(async ([category, reminders]) => {
+      [...itemsByCategory].map(async ([category, items]) => {
         const candidates = await this.provider.search({
           categories: [category],
           location: request.location,
         });
 
-        return reminders.map((reminder) => ({
-          reminderId: reminder.id,
+        return items.map((item) => ({
+          itemId: item.id,
           candidates,
         }));
       }),
@@ -74,7 +74,7 @@ export class PlacesService {
 
     return {
       results: resultGroups.flat(),
-      unsupportedReminderIds,
+      unsupportedItemIds,
     };
   }
 }

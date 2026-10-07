@@ -23,16 +23,16 @@ export class CurrentLocationDto {
   longitude!: number;
 }
 
-export class ReminderDto {
+export class ItemDto {
   @IsString()
   @Matches(/\S/, {
-    message: 'reminder id must contain at least one non-whitespace character',
+    message: 'item id must contain at least one non-whitespace character',
   })
   id!: string;
 
   @IsString()
   @Matches(/\S/, {
-    message: 'reminder text must contain at least one non-whitespace character',
+    message: 'item text must contain at least one non-whitespace character',
   })
   text!: string;
 }
@@ -41,8 +41,8 @@ export class FindPlaceCandidatesDto {
   @IsArray()
   @ArrayMinSize(1)
   @ValidateNested({ each: true })
-  @Type(() => ReminderDto)
-  reminders!: ReminderDto[];
+  @Type(() => ItemDto)
+  items!: ItemDto[];
 
   @IsDefined()
   @ValidateNested()

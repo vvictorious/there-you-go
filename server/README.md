@@ -35,7 +35,7 @@ curl http://localhost:3000/health
 
 ```json
 {
-  "reminders": ["Milk"],
+  "items": ["Milk"],
   "location": {
     "latitude": 34.0,
     "longitude": -118.4
@@ -57,13 +57,13 @@ It returns an application-owned contract:
       }
     }
   ],
-  "unsupportedReminders": []
+  "unsupportedItems": []
 }
 ```
 
 The current product rule is intentionally limited to case-insensitive `milk`,
-which maps to the application category `grocery-store`. Unsupported reminders
-are listed in `unsupportedReminders`; when none are supported, the endpoint
+which maps to the application category `grocery-store`. Unsupported items
+are listed in `unsupportedItems`; when none are supported, the endpoint
 returns an empty candidate list without calling Google.
 
 The Google integration uses Nearby Search (New):

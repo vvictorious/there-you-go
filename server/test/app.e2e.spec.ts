@@ -49,7 +49,7 @@ describe('API (e2e)', () => {
     const response = await request(app.getHttpServer())
       .post('/places/candidates')
       .send({
-        reminders: [{ id: 'reminder-1', text: 'Milk' }],
+        items: [{ id: 'item-1', text: 'Milk' }],
         location: { latitude: 34, longitude: -118.4 },
       })
       .expect(200);
@@ -57,7 +57,7 @@ describe('API (e2e)', () => {
     expect(response.body).toEqual({
       results: [
         {
-          reminderId: 'reminder-1',
+          itemId: 'item-1',
           candidates: [
             {
               id: 'market-1',
@@ -67,7 +67,7 @@ describe('API (e2e)', () => {
           ],
         },
       ],
-      unsupportedReminderIds: [],
+      unsupportedItemIds: [],
     });
     expect(search).toHaveBeenCalledWith({
       categories: ['grocery-store'],
@@ -75,40 +75,40 @@ describe('API (e2e)', () => {
     });
   });
 
-  it('returns unsupported reminders without searching', async () => {
+  it('returns unsupported items without searching', async () => {
     search.mockClear();
 
     await request(app.getHttpServer())
       .post('/places/candidates')
       .send({
-        reminders: [{ id: 'reminder-1', text: 'Bread' }],
+        items: [{ id: 'item-1', text: 'Bread' }],
         location: { latitude: 34, longitude: -118.4 },
       })
       .expect(200)
       .expect({
         results: [],
-        unsupportedReminderIds: ['reminder-1'],
+        unsupportedItemIds: ['item-1'],
       });
 
     expect(search).not.toHaveBeenCalled();
   });
 
   it.each([
-    { reminders: [], location: { latitude: 34, longitude: -118.4 } },
+    { items: [], location: { latitude: 34, longitude: -118.4 } },
     {
-      reminders: [{ id: '', text: 'Milk' }],
+      items: [{ id: '', text: 'Milk' }],
       location: { latitude: 34, longitude: -118.4 },
     },
     {
-      reminders: [{ id: 'reminder-1', text: '' }],
+      items: [{ id: 'item-1', text: '' }],
       location: { latitude: 34, longitude: -118.4 },
     },
     {
-      reminders: [{ id: 'reminder-1', text: 'Milk' }],
+      items: [{ id: 'item-1', text: 'Milk' }],
       location: { latitude: 90.1, longitude: -118.4 },
     },
     {
-      reminders: [{ id: 'reminder-1', text: 'Milk' }],
+      items: [{ id: 'item-1', text: 'Milk' }],
       location: { latitude: 34, longitude: 180.1 },
     },
   ])('rejects invalid candidate input', async (body) => {
