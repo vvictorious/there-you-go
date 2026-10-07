@@ -3,7 +3,6 @@ import { useEffect } from 'react';
 
 import { findPlaceCandidates } from '../api/places';
 import type { Item } from '../models/Item';
-import { containsMilkItem } from '../services/placeCandidateDiscovery';
 
 type UsePlaceCandidatesOptions = {
   isLoadingItems: boolean;
@@ -15,7 +14,7 @@ export function usePlaceCandidates({
   items,
 }: UsePlaceCandidatesOptions) {
   useEffect(() => {
-    if (isLoadingItems || !containsMilkItem(items)) {
+    if (isLoadingItems || items.length === 0) {
       return;
     }
 
@@ -23,7 +22,7 @@ export function usePlaceCandidates({
     let isActive = true;
 
     async function loadCandidates() {
-      console.info('[places] Milk item detected.');
+      console.info('[places] Discovering candidates for current items.');
 
       try {
         const permission = await Location.requestForegroundPermissionsAsync();

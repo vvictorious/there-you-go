@@ -18,63 +18,70 @@ describe('GooglePlacesProvider', () => {
     vi.unstubAllGlobals();
   });
 
-  it('maps Nearby Search results into application-owned candidates', async () => {
-    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          places: [
-            {
-              id: 'google-place-1',
-              displayName: { text: 'Local Market', languageCode: 'en' },
-              location: { latitude: 34.01, longitude: -118.41 },
-              types: ['grocery_store', 'store'],
-            },
-          ],
+  it.each([
+    ['grocery-store', 'grocery_store'],
+    ['pharmacy', 'pharmacy'],
+    ['pet-store', 'pet_store'],
+  ] as const)(
+    'maps %s searches to Google type %s',
+    async (category, googleType) => {
+      const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            places: [
+              {
+                id: 'google-place-1',
+                displayName: { text: 'Local Market', languageCode: 'en' },
+                location: { latitude: 34.01, longitude: -118.41 },
+                types: ['grocery_store', 'store'],
+              },
+            ],
+          }),
+          { status: 200 },
+        ),
+      );
+      vi.stubGlobal('fetch', fetchMock);
+      const provider = new GooglePlacesProvider(
+        new ConfigService({ GOOGLE_PLACES_API_KEY: 'test-key' }),
+      );
+
+      await expect(
+        provider.search({
+          categories: [category],
+          location: { latitude: 34, longitude: -118.4 },
         }),
-        { status: 200 },
-      ),
-    );
-    vi.stubGlobal('fetch', fetchMock);
-    const provider = new GooglePlacesProvider(
-      new ConfigService({ GOOGLE_PLACES_API_KEY: 'test-key' }),
-    );
-
-    await expect(
-      provider.search({
-        categories: ['grocery-store'],
-        location: { latitude: 34, longitude: -118.4 },
-      }),
-    ).resolves.toEqual([
-      {
-        id: 'google-place-1',
-        name: 'Local Market',
-        location: { latitude: 34.01, longitude: -118.41 },
-      },
-    ]);
-
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    const [url, options] = fetchMock.mock.calls[0];
-    expect(url).toBe(GOOGLE_NEARBY_SEARCH_URL);
-    expect(options?.headers).toEqual({
-      'Content-Type': 'application/json',
-      'X-Goog-Api-Key': 'test-key',
-      'X-Goog-FieldMask': GOOGLE_PLACES_FIELD_MASK,
-    });
-    if (typeof options?.body !== 'string') {
-      throw new Error('Expected a JSON request body');
-    }
-    expect(JSON.parse(options.body)).toEqual({
-      includedTypes: ['grocery_store'],
-      maxResultCount: NEARBY_CANDIDATE_LIMIT,
-      rankPreference: 'DISTANCE',
-      locationRestriction: {
-        circle: {
-          center: { latitude: 34, longitude: -118.4 },
-          radius: NEARBY_SEARCH_RADIUS_METERS,
+      ).resolves.toEqual([
+        {
+          id: 'google-place-1',
+          name: 'Local Market',
+          location: { latitude: 34.01, longitude: -118.41 },
         },
-      },
-    });
-  });
+      ]);
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      const [url, options] = fetchMock.mock.calls[0];
+      expect(url).toBe(GOOGLE_NEARBY_SEARCH_URL);
+      expect(options?.headers).toEqual({
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': 'test-key',
+        'X-Goog-FieldMask': GOOGLE_PLACES_FIELD_MASK,
+      });
+      if (typeof options?.body !== 'string') {
+        throw new Error('Expected a JSON request body');
+      }
+      expect(JSON.parse(options.body)).toEqual({
+        includedTypes: [googleType],
+        maxResultCount: NEARBY_CANDIDATE_LIMIT,
+        rankPreference: 'DISTANCE',
+        locationRestriction: {
+          circle: {
+            center: { latitude: 34, longitude: -118.4 },
+            radius: NEARBY_SEARCH_RADIUS_METERS,
+          },
+        },
+      });
+    },
+  );
 
   it('fails clearly without a configured API key', async () => {
     const fetchMock = vi.fn<typeof fetch>();

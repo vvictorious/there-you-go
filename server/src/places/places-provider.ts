@@ -1,6 +1,6 @@
 export const PLACES_PROVIDER = Symbol('PLACES_PROVIDER');
 
-export type DestinationCategory = 'grocery-store';
+export type DestinationCategory = 'grocery-store' | 'pharmacy' | 'pet-store';
 
 export interface PlaceSearchRequest {
   categories: readonly DestinationCategory[];

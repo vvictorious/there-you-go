@@ -28,6 +28,9 @@ export interface FindPlaceCandidatesResult {
 
 const ITEM_CATEGORIES: Readonly<Record<string, DestinationCategory>> = {
   milk: 'grocery-store',
+  bananas: 'grocery-store',
+  'cortisone cream': 'pharmacy',
+  'dog food': 'pet-store',
 };
 
 @Injectable()
@@ -40,40 +43,42 @@ export class PlacesService {
   async findCandidates(
     request: FindPlaceCandidatesRequest,
   ): Promise<FindPlaceCandidatesResult> {
-    const itemsByCategory = new Map<
-      DestinationCategory,
-      { id: string; text: string }[]
-    >();
+    const supportedItems: {
+      itemId: string;
+      category: DestinationCategory;
+    }[] = [];
+    const categories = new Set<DestinationCategory>();
     const unsupportedItemIds: string[] = [];
 
     for (const item of request.items) {
       const category = ITEM_CATEGORIES[item.text.trim().toLowerCase()];
 
       if (category) {
-        const items = itemsByCategory.get(category) ?? [];
-        items.push(item);
-        itemsByCategory.set(category, items);
+        supportedItems.push({ itemId: item.id, category });
+        categories.add(category);
       } else {
         unsupportedItemIds.push(item.id);
       }
     }
 
-    const resultGroups = await Promise.all(
-      [...itemsByCategory].map(async ([category, items]) => {
-        const candidates = await this.provider.search({
-          categories: [category],
-          location: request.location,
-        });
+    const candidatesByCategory = new Map(
+      await Promise.all(
+        [...categories].map(async (category) => {
+          const candidates = await this.provider.search({
+            categories: [category],
+            location: request.location,
+          });
 
-        return items.map((item) => ({
-          itemId: item.id,
-          candidates,
-        }));
-      }),
+          return [category, candidates] as const;
+        }),
+      ),
     );
 
     return {
-      results: resultGroups.flat(),
+      results: supportedItems.map(({ itemId, category }) => ({
+        itemId,
+        candidates: candidatesByCategory.get(category) ?? [],
+      })),
       unsupportedItemIds,
     };
   }

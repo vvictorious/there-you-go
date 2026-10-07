@@ -93,6 +93,82 @@ describe('API (e2e)', () => {
     expect(search).not.toHaveBeenCalled();
   });
 
+  it('returns candidates for every supported category in item order', async () => {
+    search.mockReset();
+    search.mockImplementation(({ categories }) => {
+      const category = categories[0];
+
+      return Promise.resolve([
+        {
+          id: `${category}-1`,
+          name: category,
+          location: { latitude: 34.001, longitude: -118.401 },
+        },
+      ]);
+    });
+
+    await request(app.getHttpServer())
+      .post('/places/candidates')
+      .send({
+        items: [
+          { id: 'item-1', text: 'Milk' },
+          { id: 'item-2', text: 'Cortisone cream' },
+          { id: 'item-3', text: 'Bananas' },
+          { id: 'item-4', text: 'Dog food' },
+          { id: 'item-5', text: 'Bread' },
+        ],
+        location: { latitude: 34, longitude: -118.4 },
+      })
+      .expect(200)
+      .expect({
+        results: [
+          {
+            itemId: 'item-1',
+            candidates: [
+              {
+                id: 'grocery-store-1',
+                name: 'grocery-store',
+                location: { latitude: 34.001, longitude: -118.401 },
+              },
+            ],
+          },
+          {
+            itemId: 'item-2',
+            candidates: [
+              {
+                id: 'pharmacy-1',
+                name: 'pharmacy',
+                location: { latitude: 34.001, longitude: -118.401 },
+              },
+            ],
+          },
+          {
+            itemId: 'item-3',
+            candidates: [
+              {
+                id: 'grocery-store-1',
+                name: 'grocery-store',
+                location: { latitude: 34.001, longitude: -118.401 },
+              },
+            ],
+          },
+          {
+            itemId: 'item-4',
+            candidates: [
+              {
+                id: 'pet-store-1',
+                name: 'pet-store',
+                location: { latitude: 34.001, longitude: -118.401 },
+              },
+            ],
+          },
+        ],
+        unsupportedItemIds: ['item-5'],
+      });
+
+    expect(search).toHaveBeenCalledTimes(3);
+  });
+
   it.each([
     { items: [], location: { latitude: 34, longitude: -118.4 } },
     {

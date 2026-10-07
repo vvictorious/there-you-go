@@ -23,6 +23,8 @@ const GOOGLE_PLACE_TYPES: Readonly<
   Record<DestinationCategory, readonly string[]>
 > = {
   'grocery-store': ['grocery_store'],
+  pharmacy: ['pharmacy'],
+  'pet-store': ['pet_store'],
 };
 
 interface GoogleNearbySearchResponse {
