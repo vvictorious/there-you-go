@@ -75,7 +75,7 @@ describe('PlacesService', () => {
   });
 
   it('queries once per category and preserves input order and item IDs', async () => {
-    const candidatesByCategory = {
+    const candidatesByCategory: Record<string, readonly PlaceCandidate[]> = {
       'grocery-store': [
         {
           id: 'market-1',
@@ -97,7 +97,7 @@ describe('PlacesService', () => {
           location: { latitude: 34.053, longitude: -118.253 },
         },
       ],
-    } satisfies Record<string, readonly PlaceCandidate[]>;
+    };
     const search = vi
       .fn<PlacesProvider['search']>()
       .mockImplementation(({ categories }) => {
