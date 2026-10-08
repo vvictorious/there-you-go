@@ -1,0 +1,18 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "declaration": false,
+    "incremental": false,
+    "outDir": "../dist-evaluation",
+    "rootDir": "..",
+    "sourceMap": false
+  },
+  "include": [
+    "./classification/dataset.ts",
+    "./classification/evaluate.ts",
+    "./classification/model-contract.ts",
+    "./classification/run.ts",
+    "../src/classification/classification-response.ts",
+    "../src/places/destination-category.ts"
+  ]
+}

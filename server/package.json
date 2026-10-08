@@ -6,17 +6,19 @@
   "license": "UNLICENSED",
   "scripts": {
     "build": "nest build",
-    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-    "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\"",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\" \"evaluation/**/*.{ts,md,json}\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\" \"evaluation/**/*.{ts,md,json}\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
-    "lint": "eslint \"{src,test}/**/*.ts\"",
+    "lint": "eslint \"{src,test,evaluation}/**/*.ts\"",
     "lint:fix": "npm run lint -- --fix",
-    "test": "vitest run src",
+    "test": "vitest run src evaluation",
     "test:watch": "vitest src",
-    "test:e2e": "vitest run test"
+    "test:e2e": "vitest run test",
+    "typecheck": "tsc --noEmit",
+    "eval:classification": "tsc -p evaluation/tsconfig.json && node dist-evaluation/evaluation/classification/run.js"
   },
   "engines": {
     "node": ">=22.13"
