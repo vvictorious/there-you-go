@@ -1,11 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 
+import type { DestinationCategory } from './destination-category';
 import { PLACES_PROVIDER } from './places-provider';
-import type {
-  DestinationCategory,
-  PlaceCandidate,
-  PlacesProvider,
-} from './places-provider';
+import type { PlaceCandidate, PlacesProvider } from './places-provider';
 
 export interface FindPlaceCandidatesRequest {
   items: readonly {

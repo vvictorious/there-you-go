@@ -5,6 +5,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import type { DestinationCategory } from './destination-category';
 import {
   GooglePlacesProvider,
   GOOGLE_NEARBY_SEARCH_URL,
@@ -19,12 +20,31 @@ describe('GooglePlacesProvider', () => {
   });
 
   it.each([
-    ['grocery-store', 'grocery_store'],
-    ['pharmacy', 'pharmacy'],
-    ['pet-store', 'pet_store'],
-  ] as const)(
-    'maps %s searches to Google type %s',
-    async (category, googleType) => {
+    [
+      'grocery-store',
+      [
+        'grocery_store',
+        'supermarket',
+        'asian_grocery_store',
+        'discount_supermarket',
+        'health_food_store',
+      ],
+    ],
+    ['convenience-store', ['convenience_store']],
+    ['pharmacy', ['pharmacy', 'drugstore']],
+    ['pet-store', ['pet_store']],
+    ['hardware-store', ['hardware_store', 'home_improvement_store']],
+    ['electronics-store', ['electronics_store']],
+    ['department-store', ['department_store']],
+    [
+      'clothing-store',
+      ['clothing_store', 'womens_clothing_store', 'sportswear_store'],
+    ],
+    ['auto-parts-store', ['auto_parts_store']],
+    ['home-goods-store', ['home_goods_store']],
+  ] as const satisfies readonly [DestinationCategory, readonly string[]][])(
+    'maps %s searches to its Google primary types',
+    async (category, googleTypes) => {
       const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
         new Response(
           JSON.stringify({
@@ -70,7 +90,7 @@ describe('GooglePlacesProvider', () => {
         throw new Error('Expected a JSON request body');
       }
       expect(JSON.parse(options.body)).toEqual({
-        includedPrimaryTypes: [googleType],
+        includedPrimaryTypes: googleTypes,
         maxResultCount: NEARBY_CANDIDATE_LIMIT,
         rankPreference: 'DISTANCE',
         locationRestriction: {

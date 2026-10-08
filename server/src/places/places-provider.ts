@@ -1,6 +1,6 @@
-export const PLACES_PROVIDER = Symbol('PLACES_PROVIDER');
+import type { DestinationCategory } from './destination-category';
 
-export type DestinationCategory = 'grocery-store' | 'pharmacy' | 'pet-store';
+export const PLACES_PROVIDER = Symbol('PLACES_PROVIDER');
 
 export interface PlaceSearchRequest {
   categories: readonly DestinationCategory[];

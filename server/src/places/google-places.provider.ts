@@ -5,8 +5,8 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
+import { GOOGLE_PLACE_TYPES } from './google-place-types';
 import type {
-  DestinationCategory,
   PlaceCandidate,
   PlaceSearchRequest,
   PlacesProvider,
@@ -18,14 +18,6 @@ export const GOOGLE_PLACES_FIELD_MASK =
   'places.id,places.displayName,places.location';
 export const NEARBY_SEARCH_RADIUS_METERS = 3218.688;
 export const NEARBY_CANDIDATE_LIMIT = 5;
-
-const GOOGLE_PLACE_TYPES: Readonly<
-  Record<DestinationCategory, readonly string[]>
-> = {
-  'grocery-store': ['grocery_store'],
-  pharmacy: ['pharmacy'],
-  'pet-store': ['pet_store'],
-};
 
 interface GoogleNearbySearchResponse {
   places?: GooglePlace[];
