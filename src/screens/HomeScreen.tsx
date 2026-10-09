@@ -11,6 +11,7 @@ import {
 
 import { ItemInput } from '../components/ItemInput';
 import { ItemRow } from '../components/ItemRow';
+import { useItemClassification } from '../hooks/useItemClassification';
 import { useItems } from '../hooks/useItems';
 import { usePlaceCandidates } from '../hooks/usePlaceCandidates';
 
@@ -22,7 +23,18 @@ export function HomeScreen() {
     addItem,
     updateItem,
     deleteItem,
+    markClassificationPending,
+    applyClassificationResult,
+    markClassificationFailed,
   } = useItems();
+
+  useItemClassification({
+    items,
+    isLoadingItems: isLoading,
+    markClassificationPending,
+    applyClassificationResult,
+    markClassificationFailed,
+  });
 
   usePlaceCandidates({
     isLoadingItems: isLoading,
@@ -55,7 +67,9 @@ export function HomeScreen() {
             items.length === 0 && styles.emptyListContent,
           ]}
           data={items}
-          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+          keyboardDismissMode={
+            Platform.OS === 'ios' ? 'interactive' : 'on-drag'
+          }
           keyboardShouldPersistTaps="handled"
           keyExtractor={(item) => item.id}
           ListEmptyComponent={
@@ -73,11 +87,7 @@ export function HomeScreen() {
             )
           }
           renderItem={({ item }) => (
-            <ItemRow
-              onDelete={deleteItem}
-              onEdit={updateItem}
-              item={item}
-            />
+            <ItemRow onDelete={deleteItem} onEdit={updateItem} item={item} />
           )}
         />
       </KeyboardAvoidingView>

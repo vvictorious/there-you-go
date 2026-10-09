@@ -1,8 +1,12 @@
 import * as Location from 'expo-location';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 
 import { findPlaceCandidates } from '../api/places';
 import type { Item } from '../models/Item';
+import {
+  createPlaceRequestItemsSignature,
+  parsePlaceRequestItemsSignature,
+} from './place-item-projection';
 
 type UsePlaceCandidatesOptions = {
   isLoadingItems: boolean;
@@ -13,8 +17,14 @@ export function usePlaceCandidates({
   isLoadingItems,
   items,
 }: UsePlaceCandidatesOptions) {
+  const requestItemsSignature = createPlaceRequestItemsSignature(items);
+  const requestItems = useMemo(
+    () => parsePlaceRequestItemsSignature(requestItemsSignature),
+    [requestItemsSignature],
+  );
+
   useEffect(() => {
-    if (isLoadingItems || items.length === 0) {
+    if (isLoadingItems || requestItems.length === 0) {
       return;
     }
 
@@ -52,7 +62,7 @@ export function usePlaceCandidates({
 
         const result = await findPlaceCandidates(
           {
-            items: items.map(({ id, text }) => ({ id, text })),
+            items: [...requestItems],
             location,
           },
           { signal: abortController.signal },
@@ -61,7 +71,7 @@ export function usePlaceCandidates({
           return;
         }
 
-        const itemsById = new Map(items.map((item) => [item.id, item]));
+        const itemsById = new Map(requestItems.map((item) => [item.id, item]));
 
         for (const { itemId, candidates } of result.results) {
           const itemText = itemsById.get(itemId)?.text ?? 'Unknown item';
@@ -95,5 +105,5 @@ export function usePlaceCandidates({
       isActive = false;
       abortController.abort();
     };
-  }, [isLoadingItems, items]);
+  }, [isLoadingItems, requestItems]);
 }
