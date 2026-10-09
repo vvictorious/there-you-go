@@ -5,16 +5,27 @@ import { App } from 'supertest/types';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { AppModule } from '../src/app.module';
+import {
+  CLASSIFICATION_PROVIDER,
+  ClassificationProvider,
+} from '../src/classification/classification-provider';
+import {
+  DESTINATION_TAXONOMY_VERSION,
+  ItemClassificationResponse,
+} from '../src/classification/classification-response';
 import { PLACES_PROVIDER, PlacesProvider } from '../src/places/places-provider';
 
 describe('API (e2e)', () => {
   let app: INestApplication<App>;
+  const classify = vi.fn<ClassificationProvider['classify']>();
   const search = vi.fn<PlacesProvider['search']>();
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
+      .overrideProvider(CLASSIFICATION_PROVIDER)
+      .useValue({ classify } satisfies ClassificationProvider)
       .overrideProvider(PLACES_PROVIDER)
       .useValue({ search } satisfies PlacesProvider)
       .compile();
@@ -35,6 +46,75 @@ describe('API (e2e)', () => {
       .get('/health')
       .expect(200)
       .expect({ status: 'ok' });
+  });
+
+  it.each([
+    {
+      outcome: 'classified',
+      categories: ['grocery-store', 'convenience-store'],
+      taxonomyVersion: DESTINATION_TAXONOMY_VERSION,
+    },
+    {
+      outcome: 'no-destination',
+      categories: [],
+      taxonomyVersion: DESTINATION_TAXONOMY_VERSION,
+    },
+    {
+      outcome: 'needs-clarification',
+      categories: [],
+      clarificationQuestion: 'What item do you need?',
+      taxonomyVersion: DESTINATION_TAXONOMY_VERSION,
+    },
+    {
+      outcome: 'unsupported-destination',
+      categories: [],
+      taxonomyVersion: DESTINATION_TAXONOMY_VERSION,
+    },
+  ] satisfies ItemClassificationResponse[])(
+    'POST /classification returns a validated $outcome response',
+    async (providerResponse) => {
+      classify.mockResolvedValueOnce(providerResponse);
+
+      await request(app.getHttpServer())
+        .post('/classification')
+        .send({ text: 'Milk' })
+        .expect(200)
+        .expect(providerResponse);
+
+      expect(classify).toHaveBeenLastCalledWith('Milk');
+    },
+  );
+
+  it.each([
+    {},
+    { text: null },
+    { text: 42 },
+    { text: '' },
+    { text: '   ' },
+    { text: 'a'.repeat(501) },
+    { text: 'Milk', unexpected: true },
+  ])('POST /classification rejects invalid input', async (body) => {
+    classify.mockClear();
+
+    await request(app.getHttpServer())
+      .post('/classification')
+      .send(body)
+      .expect(400);
+
+    expect(classify).not.toHaveBeenCalled();
+  });
+
+  it('POST /classification rejects a malformed provider response', async () => {
+    classify.mockResolvedValueOnce({
+      outcome: 'classified',
+      categories: [],
+      taxonomyVersion: DESTINATION_TAXONOMY_VERSION,
+    });
+
+    await request(app.getHttpServer())
+      .post('/classification')
+      .send({ text: 'Milk' })
+      .expect(500);
   });
 
   it('POST /places/candidates returns mapped candidates', async () => {
@@ -192,6 +272,47 @@ describe('API (e2e)', () => {
       .post('/places/candidates')
       .send(body)
       .expect(400);
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+});
+
+describe('unconfigured classification provider (e2e)', () => {
+  let app: INestApplication<App>;
+
+  beforeAll(async () => {
+    const moduleFixture = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
+
+    app = moduleFixture.createNestApplication();
+    app.useGlobalPipes(
+      new ValidationPipe({
+        forbidNonWhitelisted: true,
+        transform: true,
+        whitelist: true,
+      }),
+    );
+    await app.init();
+  });
+
+  it('starts the backend and returns 503 from POST /classification', async () => {
+    await request(app.getHttpServer())
+      .get('/health')
+      .expect(200)
+      .expect({ status: 'ok' });
+
+    await request(app.getHttpServer())
+      .post('/classification')
+      .send({ text: 'Milk' })
+      .expect(503)
+      .expect({
+        message: 'Classification provider is not configured',
+        error: 'Service Unavailable',
+        statusCode: 503,
+      });
   });
 
   afterAll(async () => {

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 
+import { ClassificationModule } from './classification/classification.module';
 import { validateEnvironment } from './config/environment';
 import { HealthModule } from './health/health.module';
 import { PlacesModule } from './places/places.module';
@@ -12,6 +13,7 @@ import { PlacesModule } from './places/places.module';
       isGlobal: true,
       validate: validateEnvironment,
     }),
+    ClassificationModule,
     HealthModule,
     PlacesModule,
   ],
