@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   GEMINI_CLASSIFICATION_DEADLINE_MS,
+  GEMINI_CLASSIFICATION_MIN_RETRY_BUDGET_MS,
   GEMINI_CLASSIFICATION_MODEL,
 } from './gemini-classification-config';
 import { GEMINI_CLASSIFICATION_PROMPT_V3 } from './gemini-classification-prompt';
@@ -109,6 +110,19 @@ describe('GeminiClassificationProvider', () => {
     expect(sdk.generateContent).toHaveBeenCalledTimes(1);
   });
 
+  it.each([
+    { status: 408 },
+    { code: 'ETIMEDOUT' },
+    { status: 'DEADLINE_EXCEEDED' },
+  ])('returns 504 for provider timeout errors', async (error) => {
+    sdk.generateContent.mockRejectedValue(error);
+
+    await expect(createProvider().classify('Milk')).rejects.toBeInstanceOf(
+      GatewayTimeoutException,
+    );
+    expect(sdk.generateContent).toHaveBeenCalledTimes(1);
+  });
+
   it('retries one transient network failure', async () => {
     const response = {
       outcome: 'no-destination',
@@ -117,6 +131,66 @@ describe('GeminiClassificationProvider', () => {
     };
     sdk.generateContent
       .mockRejectedValueOnce(new TypeError('network failed'))
+      .mockResolvedValueOnce({ text: JSON.stringify(response) });
+
+    await expect(createProvider().classify('Call Mom')).resolves.toEqual(
+      response,
+    );
+    expect(sdk.generateContent).toHaveBeenCalledTimes(2);
+  });
+
+  it.each(['ECONNRESET', 'ECONNREFUSED', 'EAI_AGAIN', 'UND_ERR_SOCKET'])(
+    'retries transient network error %s',
+    async (code) => {
+      const response = {
+        outcome: 'no-destination',
+        categories: [],
+        taxonomyVersion: 1,
+      };
+      sdk.generateContent
+        .mockRejectedValueOnce({ code })
+        .mockResolvedValueOnce({ text: JSON.stringify(response) });
+
+      await expect(createProvider().classify('Call Mom')).resolves.toEqual(
+        response,
+      );
+      expect(sdk.generateContent).toHaveBeenCalledTimes(2);
+    },
+  );
+
+  it('skips retry when less than the one-second retry budget remains', async () => {
+    sdk.generateContent.mockImplementationOnce(() => {
+      vi.setSystemTime(
+        Date.now() +
+          GEMINI_CLASSIFICATION_DEADLINE_MS -
+          GEMINI_CLASSIFICATION_MIN_RETRY_BUDGET_MS +
+          1,
+      );
+      return Promise.reject(new TypeError('network failed'));
+    });
+
+    await expect(createProvider().classify('Milk')).rejects.toEqual(
+      new BadGatewayException('Classification provider request failed'),
+    );
+    expect(GEMINI_CLASSIFICATION_MIN_RETRY_BUDGET_MS).toBe(1_000);
+    expect(sdk.generateContent).toHaveBeenCalledTimes(1);
+  });
+
+  it('retries when exactly the one-second retry budget remains', async () => {
+    const response = {
+      outcome: 'no-destination',
+      categories: [],
+      taxonomyVersion: 1,
+    };
+    sdk.generateContent
+      .mockImplementationOnce(() => {
+        vi.setSystemTime(
+          Date.now() +
+            GEMINI_CLASSIFICATION_DEADLINE_MS -
+            GEMINI_CLASSIFICATION_MIN_RETRY_BUDGET_MS,
+        );
+        return Promise.reject(new TypeError('network failed'));
+      })
       .mockResolvedValueOnce({ text: JSON.stringify(response) });
 
     await expect(createProvider().classify('Call Mom')).resolves.toEqual(

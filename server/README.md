@@ -12,22 +12,30 @@ cp .env.example .env
 npm run start:dev
 ```
 
-The API defaults to port `3000`. Add your restricted server-side Google Places
-API key to `.env` before using the Places endpoint:
+The API defaults to port `3000`. API keys are optional at startup, so the
+health endpoint remains available when integrations are unconfigured. Add only
+the server-side credentials needed by the endpoints you use:
 
 ```dotenv
+GEMINI_API_KEY=your-gemini-key
 GOOGLE_PLACES_API_KEY=your-real-key
 ```
 
 The ignored `.env` file is the only project file that should contain the real
-credential. Restrict the key to the Places API (New) and to the server
-environment where possible.
+credentials. Never commit API keys. Restrict the Places key to the Places API
+(New) and to the server environment where possible.
 
 Check the running service:
 
 ```bash
 curl http://localhost:3000/health
 ```
+
+## Classification
+
+`POST /classification` requires `GEMINI_API_KEY`. The backend still starts
+without this optional configuration, but classification requests return `503`
+until the key is configured.
 
 ## Place candidates
 

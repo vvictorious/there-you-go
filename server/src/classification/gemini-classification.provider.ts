@@ -18,6 +18,7 @@ import { GEMINI_CLASSIFICATION_PROMPT_V3 } from './gemini-classification-prompt'
 import { GEMINI_CLASSIFICATION_SCHEMA } from './gemini-classification-schema';
 
 type ProviderError = {
+  cause?: unknown;
   code?: unknown;
   name?: unknown;
   status?: unknown;
@@ -25,20 +26,60 @@ type ProviderError = {
 
 class ClassificationDeadlineError extends Error {}
 
+const TIMEOUT_ERROR_CODES = new Set<unknown>([
+  408,
+  '408',
+  'DEADLINE_EXCEEDED',
+  'ETIMEDOUT',
+  'UND_ERR_BODY_TIMEOUT',
+  'UND_ERR_CONNECT_TIMEOUT',
+  'UND_ERR_HEADERS_TIMEOUT',
+]);
+
+const TRANSIENT_NETWORK_ERROR_CODES = new Set<unknown>([
+  'EAI_AGAIN',
+  'ECONNREFUSED',
+  'ECONNRESET',
+  'EHOSTDOWN',
+  'EHOSTUNREACH',
+  'ENETDOWN',
+  'ENETUNREACH',
+  'ENOTFOUND',
+  'EPIPE',
+  'UND_ERR_CONNECT',
+  'UND_ERR_SOCKET',
+]);
+
 function isRecord(value: unknown): value is ProviderError {
   return typeof value === 'object' && value !== null;
 }
 
-function isRateLimitError(error: unknown) {
-  if (!isRecord(error)) {
-    return false;
+function errorChainIncludes(
+  error: unknown,
+  predicate: (candidate: ProviderError) => boolean,
+) {
+  const seen = new Set<unknown>();
+  let candidate = error;
+
+  while (isRecord(candidate) && !seen.has(candidate)) {
+    if (predicate(candidate)) {
+      return true;
+    }
+    seen.add(candidate);
+    candidate = candidate.cause;
   }
 
-  return (
-    error.status === 429 ||
-    error.code === 429 ||
-    error.status === 'RESOURCE_EXHAUSTED' ||
-    error.code === 'RESOURCE_EXHAUSTED'
+  return false;
+}
+
+function isRateLimitError(error: unknown) {
+  return errorChainIncludes(
+    error,
+    ({ code, status }) =>
+      status === 429 ||
+      code === 429 ||
+      status === 'RESOURCE_EXHAUSTED' ||
+      code === 'RESOURCE_EXHAUSTED',
   );
 }
 
@@ -46,14 +87,16 @@ function isTimeoutError(error: unknown) {
   if (error instanceof ClassificationDeadlineError) {
     return true;
   }
-  if (!isRecord(error)) {
-    return false;
-  }
 
-  return (
-    error.name === 'AbortError' ||
-    error.name === 'TimeoutError' ||
-    error.name === 'RequestTimeoutError'
+  return errorChainIncludes(
+    error,
+    ({ code, name, status }) =>
+      name === 'AbortError' ||
+      name === 'TimeoutError' ||
+      name === 'RequestTimeoutError' ||
+      name === 'DEADLINE_EXCEEDED' ||
+      TIMEOUT_ERROR_CODES.has(code) ||
+      TIMEOUT_ERROR_CODES.has(status),
   );
 }
 
@@ -65,9 +108,11 @@ function isTransientError(error: unknown) {
     return true;
   }
 
-  return (
-    error.status === 408 ||
-    (typeof error.status === 'number' && error.status >= 500)
+  return errorChainIncludes(
+    error,
+    ({ code, status }) =>
+      TRANSIENT_NETWORK_ERROR_CODES.has(code) ||
+      (typeof status === 'number' && status >= 500),
   );
 }
 
