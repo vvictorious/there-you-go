@@ -23,6 +23,7 @@ export function HomeScreen() {
     addItem,
     updateItem,
     deleteItem,
+    retryClassification,
     markClassificationPending,
     applyClassificationResult,
     markClassificationFailed,
@@ -87,7 +88,12 @@ export function HomeScreen() {
             )
           }
           renderItem={({ item }) => (
-            <ItemRow onDelete={deleteItem} onEdit={updateItem} item={item} />
+            <ItemRow
+              item={item}
+              onDelete={deleteItem}
+              onEdit={updateItem}
+              onRetryClassification={retryClassification}
+            />
           )}
         />
       </KeyboardAvoidingView>

@@ -8,6 +8,7 @@ import {
   deleteItem as removeItem,
   markClassificationFailed as markFailed,
   markClassificationPending as markPending,
+  retryItemClassification,
   updateItemText,
   type ClassificationAttemptSnapshot,
   type ClassificationFailure,
@@ -102,6 +103,10 @@ export function useItems() {
     setItems((currentItems) => removeItem(currentItems, id));
   }, []);
 
+  const retryClassification = useCallback((id: string) => {
+    setItems((currentItems) => retryItemClassification(currentItems, id));
+  }, []);
+
   const markClassificationPending = useCallback(
     (
       id: string,
@@ -148,6 +153,7 @@ export function useItems() {
     addItem,
     updateItem,
     deleteItem,
+    retryClassification,
     markClassificationPending,
     applyClassificationResult,
     markClassificationFailed,

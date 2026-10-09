@@ -134,6 +134,26 @@ export function deleteItem(items: readonly Item[], id: string): Item[] {
   return nextItems.length === items.length ? (items as Item[]) : nextItems;
 }
 
+export function retryItemClassification(
+  items: readonly Item[],
+  id: string,
+): Item[] {
+  let changed = false;
+  const nextItems = items.map((item) => {
+    if (item.id !== id || item.classification.status !== 'failed') {
+      return item;
+    }
+
+    changed = true;
+    return {
+      ...item,
+      classification: pendingClassification(item.revision, item.text),
+    };
+  });
+
+  return changed ? nextItems : (items as Item[]);
+}
+
 export function markClassificationPending(
   items: readonly Item[],
   id: string,

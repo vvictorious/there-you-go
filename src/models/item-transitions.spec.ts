@@ -10,6 +10,7 @@ import {
   deleteItem,
   markClassificationFailed,
   markClassificationPending,
+  retryItemClassification,
   updateItemText,
   type ClassificationAttemptSnapshot,
 } from './item-transitions';
@@ -191,6 +192,40 @@ describe('classification transitions', () => {
     expect(
       markClassificationPending([item], item.id, staleAttempt, null)[0],
     ).toBe(item);
+  });
+
+  it('explicitly retries a failed item with a fresh attempt cycle', () => {
+    const { item, attempt: activeAttempt } = startAttempt(makeItem(), 3);
+    const [failed] = markClassificationFailed([item], item.id, activeAttempt, {
+      retryable: false,
+      failureKind: 'invalid-response',
+      nextAttemptAt: null,
+    });
+
+    const [retried] = retryItemClassification([failed], failed.id);
+
+    expect(retried).toEqual({
+      ...failed,
+      classification: {
+        status: 'pending',
+        sourceRevision: failed.revision,
+        sourceText: failed.text,
+        taxonomyVersion: DESTINATION_TAXONOMY_VERSION,
+        attemptCount: 0,
+        nextAttemptAt: null,
+      },
+    });
+    expect(retried.text).toBe(failed.text);
+    expect(retried.revision).toBe(failed.revision);
+    expect(retried.updatedAt).toBe(failed.updatedAt);
+  });
+
+  it('only explicitly retries failed items', () => {
+    const item = makeItem();
+    const items = [item];
+
+    expect(retryItemClassification(items, item.id)).toBe(items);
+    expect(retryItemClassification(items, 'missing')).toBe(items);
   });
 
   it.each<ItemClassificationResult>([
