@@ -1,4 +1,5 @@
 import { parseItemClassificationResponse } from '../../src/classification/classification-response';
+import { GEMINI_CLASSIFICATION_MODEL } from '../../src/classification/gemini-classification-config';
 import { GEMINI_CLASSIFICATION_PROMPT_V3 } from '../../src/classification/gemini-classification-prompt';
 import { GEMINI_CLASSIFICATION_SCHEMA } from '../../src/classification/gemini-classification-schema';
 import {
@@ -7,7 +8,7 @@ import {
 } from './dataset';
 import { CLASSIFICATION_EVALUATION_INSTRUCTIONS } from './model-contract';
 
-export const GEMINI_MODEL = 'gemini-3.5-flash-lite';
+export const GEMINI_MODEL = GEMINI_CLASSIFICATION_MODEL;
 export const GEMINI_PRICING_AS_OF = '2026-10-07';
 export const GEMINI_INPUT_USD_PER_MILLION_TOKENS = 0.3;
 export const GEMINI_OUTPUT_USD_PER_MILLION_TOKENS = 2.5;

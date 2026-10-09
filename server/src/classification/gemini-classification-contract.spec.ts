@@ -1,11 +1,11 @@
 import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 
-import { DESTINATION_CATEGORIES } from '../places/destination-category';
 import {
   DESTINATION_TAXONOMY_VERSION,
   parseItemClassificationResponse,
 } from './classification-response';
+import { DESTINATION_CATEGORIES } from './destination-category';
 import { GEMINI_CLASSIFICATION_PROMPT_V3 } from './gemini-classification-prompt';
 import { GEMINI_CLASSIFICATION_SCHEMA } from './gemini-classification-schema';
 

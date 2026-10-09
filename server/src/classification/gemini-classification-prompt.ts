@@ -1,5 +1,5 @@
-import { DESTINATION_CATEGORIES } from '../places/destination-category';
 import { DESTINATION_TAXONOMY_VERSION } from './classification-response';
+import { DESTINATION_CATEGORIES } from './destination-category';
 
 export const GEMINI_CLASSIFICATION_PROMPT_V3 = `
 Classify one ThereYouGo reminder input.

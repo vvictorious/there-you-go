@@ -1,3 +1,4 @@
+import { BadGatewayException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -68,8 +69,10 @@ describe('ClassificationService', () => {
       taxonomyVersion: DESTINATION_TAXONOMY_VERSION,
     });
 
-    await expect(service.classify('Milk')).rejects.toThrow(
-      'Invalid item classification response',
+    await expect(service.classify('Milk')).rejects.toEqual(
+      new BadGatewayException(
+        'Classification provider returned an invalid response',
+      ),
     );
   });
 });

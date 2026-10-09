@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { BadGatewayException, Inject, Injectable } from '@nestjs/common';
 
 import {
   CLASSIFICATION_PROVIDER,
@@ -19,6 +19,12 @@ export class ClassificationService {
   async classify(text: string): Promise<ItemClassificationResponse> {
     const response = await this.provider.classify(text);
 
-    return parseItemClassificationResponse(response);
+    try {
+      return parseItemClassificationResponse(response);
+    } catch {
+      throw new BadGatewayException(
+        'Classification provider returned an invalid response',
+      );
+    }
   }
 }

@@ -1,7 +1,7 @@
 import {
   DESTINATION_CATEGORIES,
   type DestinationCategory,
-} from '../places/destination-category';
+} from './destination-category';
 
 export const DESTINATION_TAXONOMY_VERSION = 1 as const;
 export const MAX_CLARIFICATION_QUESTION_LENGTH = 160;

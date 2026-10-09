@@ -1,4 +1,5 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { App } from 'supertest/types';
@@ -114,7 +115,7 @@ describe('API (e2e)', () => {
     await request(app.getHttpServer())
       .post('/classification')
       .send({ text: 'Milk' })
-      .expect(500);
+      .expect(502);
   });
 
   it('POST /places/candidates returns mapped candidates', async () => {
@@ -285,7 +286,10 @@ describe('unconfigured classification provider (e2e)', () => {
   beforeAll(async () => {
     const moduleFixture = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider(ConfigService)
+      .useValue({ get: () => undefined })
+      .compile();
 
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(
@@ -309,7 +313,7 @@ describe('unconfigured classification provider (e2e)', () => {
       .send({ text: 'Milk' })
       .expect(503)
       .expect({
-        message: 'Classification provider is not configured',
+        message: 'Classification service is unavailable',
         error: 'Service Unavailable',
         statusCode: 503,
       });
