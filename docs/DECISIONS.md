@@ -70,3 +70,19 @@ development. Google credentials remain exclusively in the server environment.
 Candidate state, retries, background synchronization, ranking, and native
 location-notification scheduling remain intentionally undecided until this
 foreground vertical slice is validated on a physical iPhone.
+
+## Mobile item classification — 2026-10-09
+
+### Persist classification with its owning item
+
+The mobile application owns item classification state in the existing local
+item store. Each result or failure is tied to the item text, item revision, and
+taxonomy version; stale asynchronous completions are discarded when any of
+those values no longer match. Retry state is persisted, automatic retries use
+bounded backoff with at most three attempts, and permanent failures require an
+explicit user retry.
+
+Classification is foreground-only orchestration and remains separate from
+Places discovery, geofencing, and notifications. Places requests depend only
+on the item ID/text projection, so classification-only state changes do not
+start discovery and classification outcomes do not select or rank places.
