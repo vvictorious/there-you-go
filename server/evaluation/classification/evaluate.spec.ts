@@ -70,6 +70,30 @@ describe('classification evaluation dataset', () => {
       }
     }
   });
+
+  it('includes only the documented clear secondary-retailer corrections', () => {
+    const categoriesById = Object.fromEntries(
+      CLASSIFICATION_EVALUATION_DATASET.map(({ id, acceptableCategories }) => [
+        id,
+        acceptableCategories,
+      ]),
+    );
+
+    expect(categoriesById['classified-04']).toEqual([
+      'pharmacy',
+      'grocery-store',
+      'department-store',
+      'convenience-store',
+    ]);
+    expect(categoriesById['classified-06']).toContain('department-store');
+    expect(categoriesById['classified-09']).toEqual([
+      'pet-store',
+      'department-store',
+    ]);
+    expect(categoriesById['classified-12']).toContain('grocery-store');
+    expect(categoriesById['classified-18']).toContain('pharmacy');
+    expect(categoriesById['classified-28']).toContain('pharmacy');
+  });
 });
 
 describe('evaluateClassificationResponses', () => {

@@ -38,8 +38,14 @@ export const CLASSIFICATION_EVALUATION_DATASET = [
     id: 'classified-04',
     input: 'Tylonol',
     expectedOutcome: 'classified',
-    acceptableCategories: ['pharmacy', 'convenience-store'],
-    notes: 'Brand-name pain reliever with a realistic typo.',
+    acceptableCategories: [
+      'pharmacy',
+      'grocery-store',
+      'department-store',
+      'convenience-store',
+    ],
+    notes:
+      'Brand-name pain reliever with a realistic typo; commonly stocked by pharmacies, supermarkets, mass-market department stores, and convenience stores.',
   },
   {
     id: 'classified-05',
@@ -52,8 +58,14 @@ export const CLASSIFICATION_EVALUATION_DATASET = [
     id: 'classified-06',
     input: 'cough drops and tissues',
     expectedOutcome: 'classified',
-    acceptableCategories: ['pharmacy', 'grocery-store', 'convenience-store'],
-    notes: 'Multi-category cold-care request.',
+    acceptableCategories: [
+      'pharmacy',
+      'grocery-store',
+      'department-store',
+      'convenience-store',
+    ],
+    notes:
+      'Cold-care basket also routinely stocked by mass-market department stores.',
   },
   {
     id: 'classified-07',
@@ -73,8 +85,9 @@ export const CLASSIFICATION_EVALUATION_DATASET = [
     id: 'classified-09',
     input: 'fle meds for my dog',
     expectedOutcome: 'classified',
-    acceptableCategories: ['pet-store'],
-    notes: 'Typo in a pet-health request.',
+    acceptableCategories: ['pet-store', 'department-store'],
+    notes:
+      'Dog-qualified flea treatment is routinely sold by pet stores and mass-market department stores, but not human pharmacies.',
   },
   {
     id: 'classified-10',
@@ -98,8 +111,10 @@ export const CLASSIFICATION_EVALUATION_DATASET = [
       'hardware-store',
       'home-goods-store',
       'department-store',
+      'grocery-store',
     ],
-    notes: 'Household item spanning three categories.',
+    notes:
+      'Common household light bulbs are also standard supermarket inventory.',
   },
   {
     id: 'classified-13',
@@ -145,11 +160,13 @@ export const CLASSIFICATION_EVALUATION_DATASET = [
     input: 'birthday card and wrapping paper',
     expectedOutcome: 'classified',
     acceptableCategories: [
+      'pharmacy',
       'department-store',
       'grocery-store',
       'convenience-store',
     ],
-    notes: 'Multi-category occasion supplies.',
+    notes:
+      'Drugstores routinely stock both cards and basic wrapping supplies alongside the other broad retailers.',
   },
   {
     id: 'classified-19',
@@ -223,13 +240,15 @@ export const CLASSIFICATION_EVALUATION_DATASET = [
     input: 'AA batteries',
     expectedOutcome: 'classified',
     acceptableCategories: [
+      'pharmacy',
       'electronics-store',
       'hardware-store',
       'department-store',
       'grocery-store',
       'convenience-store',
     ],
-    notes: 'Edge case intentionally spanning many common retailers.',
+    notes:
+      'Edge case spanning common retailers, including drugstores where batteries are standard inventory.',
   },
   {
     id: 'classified-29',

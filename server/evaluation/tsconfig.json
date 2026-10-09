@@ -10,9 +10,14 @@
   "include": [
     "./classification/dataset.ts",
     "./classification/evaluate.ts",
+    "./classification/gemini-checkpoint.ts",
+    "./classification/gemini-runner.ts",
     "./classification/model-contract.ts",
+    "./classification/run-gemini.ts",
     "./classification/run.ts",
     "../src/classification/classification-response.ts",
+    "../src/classification/gemini-classification-prompt.ts",
+    "../src/classification/gemini-classification-schema.ts",
     "../src/places/destination-category.ts"
   ]
 }
