@@ -1,23 +1,23 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import type { ItemClassificationResult } from '../models/Classification';
+import {
+  applyClassificationResult as applyResult,
+  createItem,
+  deleteItem as removeItem,
+  markClassificationFailed as markFailed,
+  markClassificationPending as markPending,
+  updateItemText,
+  type ClassificationAttemptSnapshot,
+  type ClassificationFailure,
+} from '../models/item-transitions';
 import type { Item } from '../models/Item';
-
-const STORAGE_KEY = '@there-you-go/reminders:v1';
-
-function isItem(value: unknown): value is Item {
-  if (!value || typeof value !== 'object') {
-    return false;
-  }
-
-  const item = value as Record<string, unknown>;
-  return (
-    typeof item.id === 'string' &&
-    typeof item.text === 'string' &&
-    typeof item.createdAt === 'string' &&
-    typeof item.updatedAt === 'string'
-  );
-}
+import {
+  ITEMS_STORAGE_KEY,
+  parseStoredItems,
+  serializeItems,
+} from '../storage/items';
 
 function createItemId() {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
@@ -35,17 +35,12 @@ export function useItems() {
 
     async function loadItems() {
       try {
-        const storedValue = await AsyncStorage.getItem(STORAGE_KEY);
+        const storedValue = await AsyncStorage.getItem(ITEMS_STORAGE_KEY);
         if (!isActive || storedValue === null) {
           return;
         }
 
-        const parsedValue: unknown = JSON.parse(storedValue);
-        if (!Array.isArray(parsedValue) || !parsedValue.every(isItem)) {
-          throw new Error('Stored items have an unexpected format.');
-        }
-
-        setItems(parsedValue);
+        setItems(parseStoredItems(storedValue));
       } catch {
         if (isActive) {
           setStorageError('Saved items could not be loaded.');
@@ -67,7 +62,9 @@ export function useItems() {
   const persist = useCallback((nextItems: Item[]) => {
     writeQueue.current = writeQueue.current
       .catch(() => undefined)
-      .then(() => AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(nextItems)))
+      .then(() =>
+        AsyncStorage.setItem(ITEMS_STORAGE_KEY, serializeItems(nextItems)),
+      )
       .then(() => setStorageError(null))
       .catch(() => {
         setStorageError('Changes could not be saved on this device.');
@@ -87,45 +84,62 @@ export function useItems() {
   }, [isLoading, persist, items]);
 
   const addItem = useCallback((text: string) => {
-    const normalizedText = text.trim();
-    if (!normalizedText) {
+    const item = createItem(createItemId(), text, new Date().toISOString());
+    if (item === null) {
       return;
     }
-
-    const now = new Date().toISOString();
-    const item: Item = {
-      id: createItemId(),
-      text: normalizedText,
-      createdAt: now,
-      updatedAt: now,
-    };
 
     setItems((currentItems) => [item, ...currentItems]);
   }, []);
 
   const updateItem = useCallback((id: string, text: string) => {
-    const normalizedText = text.trim();
-
     setItems((currentItems) =>
-      normalizedText
-        ? currentItems.map((item) =>
-            item.id === id
-              ? {
-                  ...item,
-                  text: normalizedText,
-                  updatedAt: new Date().toISOString(),
-                }
-              : item,
-          )
-        : currentItems.filter((item) => item.id !== id),
+      updateItemText(currentItems, id, text, new Date().toISOString()),
     );
   }, []);
 
   const deleteItem = useCallback((id: string) => {
-    setItems((currentItems) =>
-      currentItems.filter((item) => item.id !== id),
-    );
+    setItems((currentItems) => removeItem(currentItems, id));
   }, []);
+
+  const markClassificationPending = useCallback(
+    (
+      id: string,
+      attempt: ClassificationAttemptSnapshot,
+      nextAttemptAt: string | null,
+    ) => {
+      setItems((currentItems) =>
+        markPending(currentItems, id, attempt, nextAttemptAt),
+      );
+    },
+    [],
+  );
+
+  const applyClassificationResult = useCallback(
+    (
+      id: string,
+      attempt: ClassificationAttemptSnapshot,
+      result: ItemClassificationResult,
+    ) => {
+      setItems((currentItems) =>
+        applyResult(currentItems, id, attempt, result),
+      );
+    },
+    [],
+  );
+
+  const markClassificationFailed = useCallback(
+    (
+      id: string,
+      attempt: ClassificationAttemptSnapshot,
+      failure: ClassificationFailure,
+    ) => {
+      setItems((currentItems) =>
+        markFailed(currentItems, id, attempt, failure),
+      );
+    },
+    [],
+  );
 
   return {
     items,
@@ -134,5 +148,8 @@ export function useItems() {
     addItem,
     updateItem,
     deleteItem,
+    markClassificationPending,
+    applyClassificationResult,
+    markClassificationFailed,
   };
 }
