@@ -84,6 +84,19 @@ function attemptKey(
   return `${requestKey(id, attempt.sourceRevision)}:${attempt.attemptCount}`;
 }
 
+function developmentLog(
+  message: string,
+  details: Record<string, unknown>,
+): void {
+  if (typeof __DEV__ !== 'undefined' && __DEV__) {
+    console.info(`[classification] ${message}`, details);
+  }
+}
+
+function errorType(error: unknown): string {
+  return error instanceof Error ? error.name : typeof error;
+}
+
 function retryTime(value: string | null): number {
   if (value === null) {
     return 0;
@@ -200,6 +213,7 @@ export class ItemClassificationWorker {
   private timerDueAt: number | null = null;
   private readonly inFlight = new Map<string, InFlightRequest>();
   private readonly settledAttempts = new Set<string>();
+  private readonly loggedCurrentItems = new Set<string>();
 
   constructor(dependencies: ClassificationWorkerDependencies) {
     this.classify = dependencies.classify ?? classifyItem;
@@ -230,6 +244,7 @@ export class ItemClassificationWorker {
   update(state: ClassificationWorkerState): void {
     this.state = state;
     this.removeSettledAttemptsThatChanged();
+    this.removeCurrentLogsThatChanged();
     this.abortObsoleteRequests();
 
     if (!this.canRun()) {
@@ -295,6 +310,18 @@ export class ItemClassificationWorker {
         break;
       }
 
+      if (item.classification.status === 'current') {
+        const key = requestKey(item.id, item.revision);
+        if (!this.loggedCurrentItems.has(key)) {
+          this.loggedCurrentItems.add(key);
+          developmentLog('Skipping item because classification is current.', {
+            itemId: item.id,
+            revision: item.revision,
+          });
+        }
+        continue;
+      }
+
       const eligible = eligibleAttempt(item);
       if (eligible === null) {
         continue;
@@ -314,6 +341,11 @@ export class ItemClassificationWorker {
         continue;
       }
 
+      developmentLog('Selected item for classification.', {
+        itemId: item.id,
+        revision: item.revision,
+        attemptCount: eligible.attempt.attemptCount,
+      });
       this.startRequest(eligible);
     }
 
@@ -330,6 +362,11 @@ export class ItemClassificationWorker {
     const controller = new AbortController();
     this.inFlight.set(key, { itemId: item.id, controller, attempt });
     this.callbacks.markPending(item.id, attempt, null);
+    developmentLog('Classification request started.', {
+      itemId: item.id,
+      revision: attempt.sourceRevision,
+      attemptCount: attempt.attemptCount,
+    });
 
     void this.classify(
       { text: attempt.sourceText },
@@ -339,6 +376,12 @@ export class ItemClassificationWorker {
         if (controller.signal.aborted) {
           return;
         }
+        developmentLog('Classification succeeded.', {
+          itemId: item.id,
+          revision: attempt.sourceRevision,
+          outcome: result.outcome,
+          categories: result.categories,
+        });
         this.settledAttempts.add(attemptKey(item.id, attempt));
         this.callbacks.applyResult(item.id, attempt, result);
       })
@@ -364,6 +407,15 @@ export class ItemClassificationWorker {
             ).toISOString()
           : null;
 
+        developmentLog('Classification failed.', {
+          itemId: item.id,
+          revision: attempt.sourceRevision,
+          attemptCount: attempt.attemptCount,
+          errorType: errorType(error),
+          failureKind: classifiedFailure.failureKind,
+          retryable: canRetry,
+          nextAttemptAt,
+        });
         this.settledAttempts.add(attemptKey(item.id, attempt));
         this.callbacks.markFailed(item.id, attempt, {
           failureKind: classifiedFailure.failureKind,
@@ -417,6 +469,20 @@ export class ItemClassificationWorker {
     for (const key of this.settledAttempts) {
       if (!activeAttemptKeys.has(key)) {
         this.settledAttempts.delete(key);
+      }
+    }
+  }
+
+  private removeCurrentLogsThatChanged(): void {
+    const currentKeys = new Set(
+      this.state.items
+        .filter((item) => item.classification.status === 'current')
+        .map((item) => requestKey(item.id, item.revision)),
+    );
+
+    for (const key of this.loggedCurrentItems) {
+      if (!currentKeys.has(key)) {
+        this.loggedCurrentItems.delete(key);
       }
     }
   }
